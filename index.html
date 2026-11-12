@@ -187,7 +187,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .ktools{display:flex;align-items:center;gap:14px;margin-bottom:14px}
 .ktools>b{font-size:17px;letter-spacing:-.01em}
 .tb{display:inline-flex;background:var(--card);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
-.tb button{height:34px;padding:0 13px;font-weight:500} .tb button+button{border-left:.5px solid var(--sep)}
+.tb button{height:34px;padding:0 13px;font-weight:500;white-space:nowrap} .tb button+button{border-left:.5px solid var(--sep)}
 .kal{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
 .wkh{display:grid;grid-template-columns:58px repeat(7,minmax(0,1fr));border-bottom:.5px solid var(--sep);padding:10px 0 8px}
 .wkh button{text-align:center;color:var(--ink2);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;min-width:0}
@@ -427,6 +427,46 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .pmnav b{font-size:17px;min-width:130px;text-align:center}
 .pt b.good{color:var(--green-x)} .pt b.muted{color:var(--ink2)}
 .pnote{margin:-6px 4px 14px;font-size:12.5px}
+/* client card: editable affordances */
+.kvb{background:var(--inset);border-radius:14px;padding:12px 14px;min-width:0;text-align:left;position:relative;transition:background .12s}
+.sheet .kvb{background:var(--card)}
+.kvb:hover{background:var(--fill2)} .kvb:hover::after{content:"Tahrirlash";position:absolute;top:10px;right:12px;font-size:11.5px;color:var(--accent);font-weight:600}
+.kvb span{color:var(--ink2);font-size:12.5px;display:block} .kvb b{font:600 19px var(--round);letter-spacing:-.01em;display:block;margin:3px 0 1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .kvb small{color:var(--ink2);font-size:12px;display:block;min-height:16px}
+@media (min-width:900px){ .kvb b{font-size:21px} }
+.gl input,.gl select{border-radius:8px;padding:8px 10px;margin:4px 0;cursor:text;transition:background .12s}
+.gl select{cursor:pointer}
+.gl label:hover input,.gl label:hover select{background:var(--fill)}
+.gl input:focus,.gl select:focus{background:var(--fill2);text-align:left}
+.gl input::placeholder{color:var(--accent);opacity:.75}
+.qd{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px} .qd .chip{padding:5px 11px;font-size:13px}
+.qnt{font-size:12px;margin-left:6px}
+/* reja v2 */
+.rtools{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.wsw{margin-left:auto} .wsw button{font-size:14px} .wsw button:first-child,.wsw button:last-child{font-size:19px;color:var(--accent);width:38px;padding:0}
+.wsw button[aria-current="true"]{color:var(--ink3)}
+.wkp{display:flex;gap:6px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.wp{flex:none;padding:6px 12px;border-radius:10px;text-align:left;display:flex;flex-direction:column;gap:0;color:var(--ink2)}
+.wp b{font:600 14px var(--round);color:var(--ink)} .wp span{font-size:11.5px}
+.wp:hover{background:var(--fill)} .wp.cur span{color:var(--red-x);font-weight:600}
+.wp.on{background:var(--card);box-shadow:var(--shadow)} .wp.on b{color:var(--accent)}
+.dstrip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:6px;margin-bottom:16px;gap:4px}
+.ds{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px 10px;border-radius:13px;min-width:0}
+.ds:hover{background:var(--fill)}
+.ds .dw{font-size:11.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+.ds .dn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;font:600 19px var(--round)}
+.ds .dc{font-size:12px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.ds .dbar{display:block;width:60%;height:4px;border-radius:9px;background:var(--fill2);overflow:hidden} .ds .dbar i{display:block;height:100%;background:var(--accent);border-radius:9px}
+.ds.ps .dn{color:var(--ink2)}
+.ds.td .dn{color:var(--red-x)} .ds.td .dw{color:var(--red-x)}
+.ds.on{background:var(--accent-t)} .ds.on .dn{background:var(--accent);color:var(--on-accent)}
+.ds.on.td .dn{background:var(--red);color:#fff}
+.emptyc{padding:44px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.emptyc.sm{padding:28px 20px}
+.emptyc .eic{width:56px;height:56px;border-radius:16px;background:var(--accent-t);color:var(--accent);display:grid;place-items:center;margin-bottom:6px} .emptyc .eic svg{width:28px;height:28px}
+.emptyc h3{margin:0;font-size:19px;letter-spacing:-.01em} .emptyc p{margin:0 0 10px;color:var(--ink2);max-width:440px}
+.emptyc .actions{justify-content:center}
+@media (min-width:900px){ .wkp{flex-wrap:wrap;overflow:visible} .dstrip{padding:8px;gap:6px} .ds .dn{width:42px;height:42px;font-size:21px} }
+@media (max-width:899px){ .rtools{flex-wrap:nowrap} .rtools .seg button{padding:5px 9px} .wsw button{padding:0 8px;white-space:nowrap} .wsw button:first-child,.wsw button:last-child{width:30px} .ds .dn{width:34px;height:34px;font-size:17px} .ds .dc{font-size:11px} }
 </style>
 </head>
 <body class="auth">
@@ -759,30 +799,31 @@ function clientHTML(id, inSheet){
   const upcoming=[...state.events.values()].filter(e=>e.clientId===id && !e.done).sort(byWhen);
   const hist=state.histFor===id ? state.hist : [];
   const left=b.paidUntil?daysBetween(todayStr(),b.paidUntil):null;
-  const kv=(l,v,s)=>`<div><span>${l}</span><b>${v}</b><small>${s||""}</small></div>`;
+  const kv=(l,v,s,act)=>`<button class="kvb" data-act="${act||"paysheet"}" data-id="${cid}"><span>${l}</span><b>${v}</b><small>${s||""}</small></button>`;
   return `
     <div class="prof">${avatar(c.name,"big")}
       <div class="pn"><h3>${esc(c.name)}</h3><p><span class="pill ${CSTPILL[c.st]||""}">${esc(CST[c.st]||c.st||"")}</span>${p.label?`<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>`:""}${c.domain?`<a href="https://${esc(c.domain)}" target="_blank" rel="noopener">${esc(c.domain)}</a>`:""}</p></div>
-      <div class="acts"><a class="act p" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">${ICON.tel}Qo'ng'iroq</a><button class="act" data-act="newev" data-client="${cid}">${ICON.vid}Zoom</button><button class="act" data-act="focusnote">${ICON.pen}Yozuv</button>${c.domain?`<a class="act" href="https://${esc(c.domain)}" target="_blank" rel="noopener">${ICON.web}Sayt</a>`:""}</div>
+      <div class="acts"><a class="act p" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">${ICON.tel}Qo'ng'iroq</a><button class="act" data-act="quicktask" data-client="${cid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8.5 14.5l2.5 2.5 4.5-5"/></svg>Vazifa</button><button class="act" data-act="newev" data-client="${cid}">${ICON.vid}Zoom</button><button class="act" data-act="focusnote">${ICON.pen}Yozuv</button>${c.domain?`<a class="act" href="https://${esc(c.domain)}" target="_blank" rel="noopener">${ICON.web}Sayt</a>`:""}</div>
       ${inSheet?`<button class="x" data-act="close" aria-label="Yopish">×</button>`:""}
     </div>
+    <div class="rs0" style="padding-top:4px"><span class="cap">To'lov va obuna</span><button class="linkbtn" data-act="paysheet" data-id="${cid}">Tahrirlash / to'lov kiritish</button></div>
     <div class="kv">
       ${kv("Keyingi to'lov", b.paidUntil?esc(dLabel(b.paidUntil)):"—", left==null?"":left<0?"muddati o'tgan":left+" kun qoldi")}
       ${kv("Oylik summa", b.monthly?esc(money(b.monthly,b.currency)):"—", b.agreed?"Kelishuv: "+esc(b.agreed):"")}
-      ${kv("Userlar", c.users?esc(c.users):"—", esc(c.usersNote||""))}
+      ${kv("Userlar", c.users?esc(c.users):"—", esc(c.usersNote||""), "focususers")}
       ${kv("Qarz", b.outstanding?`<span style="color:var(--red-x);display:inline">${esc(money(b.outstanding,b.currency))}</span>`:"Yo'q", "")}
       ${kv("Oxirgi to'lov", b.lastPaidAmount?esc(money(b.lastPaidAmount,"UZS")):"—", b.lastPaidAt?esc(dLabel(b.lastPaidAt)):"")}
       ${kv("Tarif", b.periodMonths?esc(b.periodMonths+" oylik"):(b.agreed?esc(b.agreed):"—"), b.syncedAt?esc(dLabel(b.syncedAt))+" holatiga":"")}
     </div>
     <div class="sub2">
       <div><span class="cap pad">Aloqa</span><div class="gl">
-        <label><span>Telefon</span><input id="c-phone" data-cfield="phone" inputmode="tel" value="${esc(c.phone||"")}" placeholder="+998"></label>
-        <label><span>Mas'ul shaxs</span><input id="c-contact" data-cfield="contact" value="${esc(c.contact||"")}" placeholder="Ism"></label>
+        <label><span>Telefon</span><input id="c-phone" data-cfield="phone" inputmode="tel" value="${esc(c.phone||"")}" placeholder="Telefon qo'shish"></label>
+        <label><span>Mas'ul shaxs</span><input id="c-contact" data-cfield="contact" value="${esc(c.contact||"")}" placeholder="Ism qo'shish"></label>
         <label><span>Holati</span><select id="c-st" data-cfield="st">${Object.entries(CST).map(([k,l])=>`<option value="${k}"${c.st===k?" selected":""}>${l}</option>`).join("")}</select></label>
-        <label><span>Userlar</span><input id="c-users" data-cfield="users" inputmode="numeric" value="${esc(c.users||"")}" placeholder="—"></label>
+        <label><span>Userlar</span><input id="c-users" data-cfield="users" inputmode="numeric" value="${esc(c.users||"")}" placeholder="Soni"></label>
       </div><div class="saved" id="c-saved"></div></div>
-      <div><div class="rs0"><span class="cap">Rejadagi uchrashuvlar</span><button class="linkbtn" data-act="newev" data-client="${cid}">+ Belgilash</button></div>
-        ${upcoming.length?`<div class="gl2">${upcoming.map(evRow).join("")}</div>`:`<p class="empty sm" style="padding-left:0">Rejada uchrashuv yo'q.</p>`}</div>
+      <div><div class="rs0"><span class="cap">Vazifa va uchrashuvlar</span><button class="linkbtn" data-act="quicktask" data-client="${cid}">+ Qo'shish</button></div>
+        ${upcoming.length?`<div class="gl2">${upcoming.map(evRow).join("")}</div>`:`<p class="empty sm" style="padding-left:0">Hozircha yo'q. «Vazifa» tugmasi bilan, masalan, ertaga qo'ng'iroq qilishni belgilang.</p>`}</div>
     </div>
     <span class="cap pad">Yangi yozuv</span>
     <form id="histForm" class="comp" novalidate>
@@ -838,8 +879,10 @@ function renderReja(){
   const selCard=sel?`<div class="card">${callDetail(sel)}</div>`:"";
   if(v==="kun"){
     const list=callsFor(state.day);
-    const left=list.length?`<div class="card">${callsCard(list)}</div>`:`<div class="card"><p class="empty">${callsFor(null).length?"Bu kunga qo'ng'iroq yo'q.":`Bu haftaga reja hali tuzilmagan. «+ Qo'ng'iroq» bilan qo'shing yoki Claude'dan «${esc(weekRange(state.rweek))} haftasi rejasini tuz» deb so'rang.`}</p></div>`;
-    if(wide) return `<div class="rj">${left}<div class="col">${selCard}${blocksCard()}${rulesCard()}</div></div>`;
+    if(!callsFor(null).length && !viewPlan()) return emptyWeek();
+    const left=list.length?`<div class="card">${callsCard(list)}</div>`:`<div class="card emptyc sm"><h3>${esc(dFull(state.day))}</h3><p>Bu kunga qo'ng'iroq rejalashtirilmagan.</p><div class="actions"><button class="ghost" data-act="newcall">+ Qo'ng'iroq qo'shish</button></div></div>`;
+    const vp=viewPlan(), hasBlocks=!!(vp&&(vp.blocks||[]).some(x=>x.day===state.day)), right=selCard+(hasBlocks?blocksCard():"")+rulesCard();
+    if(wide) return right?`<div class="rj">${left}<div class="col">${right}</div></div>`:left;
     return (list.length?summaryHTML(list):"")+left;
   }
   if(v==="jadval") return `<div class="col">${blocksCard()}${rulesCard()}</div>`;
@@ -862,20 +905,26 @@ function renderReja(){
 }
 function rejaHead(){
   const wide=isWide(); let v=state.rejaView; if(wide && v==="jadval") v="kun";
-  const opts=wide?[["kun","Ro'yxat"],["hammasi","Butun hafta"]]:[["kun","Ro'yxat"],["jadval","Jadval"],["hammasi","Butun hafta"]];
+  const opts=wide?[["kun","Kunlar"],["hammasi","Butun hafta"]]:[["kun","Kunlar"],["jadval","Jadval"],["hammasi","Hafta"]];
   const t=todayStr(), cw=state.curWeek, rw=state.rweek;
-  const wl=w=>w===cw?"Shu hafta":w===weekShift(cw,1)?"Keyingi hafta":w===weekShift(cw,-1)?"O'tgan hafta":cap1(MF[parseD(weekMon(w)).getMonth()]);
-  const weeks=[-1,0,1,2,3,4].map(n=>weekShift(cw,n));
-  if(!weeks.includes(rw)) weeks.push(rw);
+  const weeks=[-1,0,1,2,3,4].map(n=>weekShift(cw,n)); if(!weeks.includes(rw)) weeks.push(rw);
   let h=`<div class="rtools"><div class="seg" role="group" aria-label="Ko'rinish">${opts.map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>
-    <div class="wnav"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta">‹</button><b>${esc(cap1(MF[parseD(weekMon(rw)).getMonth()]))} · ${esc(weekRange(rw))}</b><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta">›</button></div></div>`;
+    <div class="tb wsw"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta">‹</button><button data-act="rweek" data-w="${cw}"${rw===cw?' aria-current="true"':""}>Shu hafta</button><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta">›</button></div></div>`;
+  h+=`<div class="wkp" role="group" aria-label="Haftalar">${weeks.map(w=>{ const m=callsByWeek.get(w), n=m?m.size:0;
+    const lbl=w===cw?"Shu hafta":n?`${n} ta qo'ng'iroq`:state.plans.has(w)?"Reja bor":"Bo'sh";
+    return `<button class="wp${w===rw?" on":""}${w===cw?" cur":""}" data-act="rweek" data-w="${w}"><b>${esc(weekRange(w))}</b><span>${esc(lbl)}</span></button>`; }).join("")}</div>`;
   if(v!=="hammasi"){
-    h+=`<div class="days d7">${weekDays(rw).map(d=>{ const c=counts(callsFor(d)), dd=parseD(d);
-      return `<button class="card day${d===t?" tdy":""}" data-act="rday" data-day="${d}" aria-pressed="${d===state.day}"><span class="ring sm">${ring(c.done,c.total,11)}<span class="rv">${c.total?c.done+"/"+c.total:"–"}</span></span><span class="dt"><b>${WD[dd.getDay()]} ${dd.getDate()}</b><span>${d===t?"Bugun":c.total?c.total+" ta":"bo'sh"}</span></span></button>`; }).join("")}</div>`;
+    h+=`<div class="card dstrip">${weekDays(rw).map(d=>{ const c=counts(callsFor(d)), dd=parseD(d);
+      return `<button class="ds${d===state.day?" on":""}${d===t?" td":""}${d<t?" ps":""}" data-act="rday" data-day="${d}"><span class="dw">${WD[dd.getDay()]}</span><span class="dn">${dd.getDate()}</span><span class="dc">${c.total?`${c.done}/${c.total}`:"&nbsp;"}</span><i class="dbar"><i style="width:${c.total?Math.max(4,c.done/c.total*100):0}%"></i></i></button>`; }).join("")}</div>`;
   }
-  h+=`<div class="wks" role="group" aria-label="Haftalar">${weeks.map(w=>{ const loaded=callsByWeek.has(w), c=loaded?counts([...callsByWeek.get(w).values()]):null, hasPlan=state.plans.has(w);
-    return `<button class="wk2${w===rw?" on":""}${w===cw?" cur":""}" data-act="rweek" data-w="${w}"><small>${esc(wl(w))}</small><b>${esc(weekRange(w))}</b><span>${c&&c.total?`${c.done}/${c.total} qo'ng'iroq`:hasPlan?"Reja bor":"Reja yo'q"}</span></button>`; }).join("")}</div>`;
   return h;
+}
+function emptyWeek(){
+  const own=state.rweek===state.curWeek;
+  return `<div class="card emptyc"><div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14h8M8 17.5h5"/></svg></div>
+    <h3>${own?"Bu haftaga":esc(weekRange(state.rweek))+" haftasiga"} reja tuzilmagan</h3>
+    <p>Qo'ng'iroqlarni o'zingiz qo'shing yoki Claude'ga «${esc(weekRange(state.rweek))} haftasi rejasini tuz» deb yozing.</p>
+    <div class="actions"><button class="primary" data-act="newcall">+ Qo'ng'iroq qo'shish</button>${own?"":`<button class="ghost" data-act="rweek" data-w="${state.curWeek}">Shu haftaga qaytish</button>`}</div></div>`;
 }
 
 /* ---------- render: To'lovlar ---------- */
@@ -1048,13 +1097,14 @@ function openEventForm(opts){
   $("#ov").hidden=false; $("#sheet").className="sheet";
   const date = e?e.date:(opts.date||state.calDay||todayStr());
   $("#sheet").innerHTML=`
-    <div class="sheet-top"><h2>${e?"Uchrashuvni tahrirlash":"Kalendarga qo'shish"}</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <div class="sheet-top"><h2>${e?"Tahrirlash":opts.heading||"Kalendarga qo'shish"}</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
     <form id="evForm" class="list" novalidate>
       <div><label class="lbl" for="e-type">Turi</label><select class="f" id="e-type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${(e?e.type:(opts.type||"zoom"))===k?" selected":""}>${l}</option>`).join("")}</select></div>
       <div><label class="lbl">Mijoz</label><div id="e-pickwrap">${clientPicker(e?e.clientId:(opts.clientId||null))}</div></div>
       <div><label class="lbl" for="e-title">Nima haqida <span class="req">*</span></label><input class="f" id="e-title" value="${esc(e?e.title:(opts.title||""))}" placeholder="Masalan: Kassa bo'yicha o'qitish"></div>
-      <div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}"></div>
-      <div class="two"><div><label class="lbl" for="e-time">Boshlanishi</label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div><div><label class="lbl" for="e-end">Tugashi</label><input class="f" id="e-end" type="time" value="${esc(e?e.timeEnd||"":minToT(tmin(opts.time||"15:00")+60))}"></div></div>
+      <div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}">
+        <div class="qd" role="group" aria-label="Tez sana">${[["Bugun",0],["Ertaga",1],["Indinga",2],["Bir haftadan keyin",7]].map(([l,n])=>`<button type="button" class="chip" data-act="qdate" data-n="${n}">${l}</button>`).join("")}</div></div>
+      <div class="two"><div><label class="lbl" for="e-time">Boshlanishi <button type="button" class="linkbtn qnt" data-act="notime">vaqtsiz</button></label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div><div><label class="lbl" for="e-end">Tugashi</label><input class="f" id="e-end" type="time" value="${esc(e?e.timeEnd||"":minToT(tmin(opts.time||"15:00")+60))}"></div></div>
       <div><label class="lbl" for="e-note">Izoh</label><textarea class="f" id="e-note">${esc(e?e.note||"":"")}</textarea></div>
       <div class="err" id="e-err"></div>
       <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="ghost" data-act="evdone" data-id="${esc(e.id)}">${e.done?"Bajarilmadi":"Bajarildi"}</button>`:""}${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
@@ -1133,7 +1183,7 @@ function doRender(){
     : state.tab==="kalendar" ? `${cap1(MF[cd.getMonth()])} ${cd.getFullYear()}`
     : state.tab==="mijozlar" ? `${state.clients.size} ta klinika`
     : state.tab==="tolovlar" ? `${dLabel(t)} holatiga`
-    : `${weekRange(state.rweek)} · ${counts(callsFor(null)).done} / ${callsFor(null).length} bajarildi`;
+    : `${cap1(MF[parseD(weekMon(state.rweek)).getMonth()])} · ${weekRange(state.rweek)}${callsFor(null).length?` · ${counts(callsFor(null)).done} / ${callsFor(null).length} bajarildi`:""}`;
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
   const fab=$("#fab"); fab.hidden=!state.db || state.tab==="tolovlar";
@@ -1141,7 +1191,7 @@ function doRender(){
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
-  for(const q of [".days.d7 [aria-pressed=\"true\"]",".wks .wk2.on"]){ const el=document.querySelector(q); if(el&&el.parentElement.scrollWidth>el.parentElement.clientWidth) el.parentElement.scrollLeft=Math.max(0,el.offsetLeft-el.parentElement.offsetLeft-16); }
+  for(const q of [".wkp .wp.on"]){ const el=document.querySelector(q); if(el&&el.parentElement.scrollWidth>el.parentElement.clientWidth) el.parentElement.scrollLeft=Math.max(0,el.offsetLeft-el.parentElement.offsetLeft-16); }
   const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
 }
 
@@ -1204,7 +1254,13 @@ document.addEventListener("click", async e=>{
       state.confirmDel=null; state.payments.delete(id); const cid=state.sheet.id; openPaySheet(cid); doRender();
       state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
     }
-    case "paysheet": openPaySheet(id); return;
+    case "paysheet": { const bk=state.sheet&&state.sheet.kind==="client"?state.sheet.id:null; openPaySheet(id); if(state.sheet) state.sheet.back=bk; return; }
+    case "focususers": { const f=$("#c-users"); if(f){ f.focus(); f.select(); } return; }
+    case "quicktask": { const cid=b.dataset.client, onPhone=state.sheet&&state.sheet.kind==="client";
+      openEventForm({clientId:cid, type:"call", title:"Qo'ng'iroq qilish", date:addDays(todayStr(),1), time:"10:00", heading:"Vazifa qo'shish", back:onPhone?cid:null});
+      const t=$("#e-title"); if(t){ t.focus(); t.select(); } return; }
+    case "qdate": { const d=$("#e-date"); if(d) d.value=addDays(todayStr(),Number(b.dataset.n)); return; }
+    case "notime": { const a=$("#e-time"), z=$("#e-end"); if(a) a.value=""; if(z) z.value=""; return; }
     case "bq": state.bq=b.dataset.f; doRender(); return;
     case "caltoday": state.calDay=todayStr(); doRender(); return;
     case "calview": state.calView=b.dataset.v; doRender(); return;
@@ -1228,6 +1284,7 @@ document.addEventListener("click", async e=>{
     case "goreja": state.tab="reja"; state.rejaView="kun"; state.day=todayStr(); doRender(); return;
     case "rview": state.rejaView=b.dataset.v; state.open=null; doRender(); return;
     case "rday": state.day=b.dataset.day; state.open=null; doRender(); return;
+    case "newcall": openCallForm(); return;
     case "rweek": case "rweekshift": {
       const w = act==="rweek" ? b.dataset.w : weekShift(state.rweek, Number(b.dataset.n));
       state.rweek=w; state.open=null; const days=weekDays(w); state.day=days.includes(todayStr())?todayStr():days[0];
@@ -1363,14 +1420,14 @@ document.addEventListener("submit", async e=>{
       if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
       if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; }
       try{ const pid=uid("p"); const row={clientId:id, amount:amt, paidAt:date, months:ext?n:null}; await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
-        await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); closeSheet(); doRender(); }
+        await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
       catch(er){ $("#p-err").textContent=failMsg(er); }
       return;
     }
     const until=$("#s-until").value, mon=$("#s-mon").value.trim(), per=$("#s-per").value, debt=$("#s-debt").value.trim();
     b.paidUntil=until||null; b.monthly=mon?num(mon):null; b.periodMonths=per?Number(per):null; b.outstanding=debt?num(debt):0; b.currency=b.currency||"UZS"; b.syncedAt=t;
     if(b.paidUntil) delete b.noSubscription;
-    try{ await updateClient(id,{billing:b}); closeSheet(); doRender(); }catch(er){ $("#s-err").textContent=failMsg(er); }
+    try{ await updateClient(id,{billing:b}); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }catch(er){ $("#s-err").textContent=failMsg(er); }
     return;
   }
   if(f.id==="clForm"){
