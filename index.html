@@ -467,6 +467,26 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .emptyc .actions{justify-content:center}
 @media (min-width:900px){ .wkp{flex-wrap:wrap;overflow:visible} .dstrip{padding:8px;gap:6px} .ds .dn{width:42px;height:42px;font-size:21px} }
 @media (max-width:899px){ .rtools{flex-wrap:nowrap} .rtools .seg button{padding:5px 9px} .wsw button{padding:0 8px;white-space:nowrap} .wsw button:first-child,.wsw button:last-child{width:30px} .ds .dn{width:34px;height:34px;font-size:17px} .ds .dc{font-size:11px} }
+/* to'lovlar v3 */
+.ptools{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.pmsw button:nth-child(2){min-width:130px;font-weight:600}
+.pmsw button:first-child,.pmsw button:last-child{font-size:19px;color:var(--accent);width:38px;padding:0}
+.pseg{overflow-x:auto;max-width:100%;scrollbar-width:none} .pseg em{font-style:normal;color:var(--ink3);margin-left:6px;font-variant-numeric:tabular-nums}
+.pseg button[aria-pressed="true"] em{color:var(--ink2)}
+.pbanner{display:flex;align-items:center;gap:12px;padding:12px 16px;margin-bottom:16px;width:100%;text-align:left}
+.pbanner .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;flex:none} .pbanner .ic svg{width:16px;height:16px}
+.pbanner:hover{background:var(--fill)}
+.ct .cnt{font-style:normal;color:var(--ink3);font-weight:600}
+.pplist{max-height:60vh;overflow:auto;box-shadow:none;background:var(--card)}
+@media (min-width:900px){ .pseg{margin-left:auto} }
+@media (max-width:899px){ .pmsw{width:100%} .pmsw button:nth-child(2){flex:1} .pseg{width:100%} .pbanner .linkbtn{display:none} }
+/* week picker grouped by month */
+.wkp{gap:18px;align-items:flex-start}
+.wg{flex:none;display:flex;flex-direction:column;gap:4px}
+.wgl{font-size:11.5px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;padding:0 12px}
+.wgr{display:flex;gap:4px}
+.wp.past b{color:var(--ink2)}
+@media (min-width:900px){ .wkp{flex-wrap:wrap;row-gap:10px} }
 </style>
 </head>
 <body class="auth">
@@ -907,12 +927,16 @@ function rejaHead(){
   const wide=isWide(); let v=state.rejaView; if(wide && v==="jadval") v="kun";
   const opts=wide?[["kun","Kunlar"],["hammasi","Butun hafta"]]:[["kun","Kunlar"],["jadval","Jadval"],["hammasi","Hafta"]];
   const t=todayStr(), cw=state.curWeek, rw=state.rweek;
-  const weeks=[-1,0,1,2,3,4].map(n=>weekShift(cw,n)); if(!weeks.includes(rw)) weeks.push(rw);
+  const td=parseD(t), endW=isoWeek(dstr(new Date(td.getFullYear(), td.getMonth()+2, 0)));
+  let from=weekShift(cw,-1), to=endW; if(rw<from) from=rw; if(rw>to) to=rw;
+  const weeks=[]; for(let w=from; weeks.length<16; w=weekShift(w,1)){ weeks.push(w); if(w===to) break; }
+  const thu=w=>parseD(addDays(weekMon(w),3)), groups=[];
+  for(const w of weeks){ const m=thu(w), key=m.getFullYear()+"-"+m.getMonth(); let g=groups[groups.length-1]; if(!g||g.key!==key){ g={key,label:cap1(MF[m.getMonth()])+(m.getFullYear()!==td.getFullYear()?" "+m.getFullYear():""),ws:[]}; groups.push(g); } g.ws.push(w); }
   let h=`<div class="rtools"><div class="seg" role="group" aria-label="Ko'rinish">${opts.map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>
     <div class="tb wsw"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta">‹</button><button data-act="rweek" data-w="${cw}"${rw===cw?' aria-current="true"':""}>Shu hafta</button><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta">›</button></div></div>`;
-  h+=`<div class="wkp" role="group" aria-label="Haftalar">${weeks.map(w=>{ const m=callsByWeek.get(w), n=m?m.size:0;
-    const lbl=w===cw?"Shu hafta":n?`${n} ta qo'ng'iroq`:state.plans.has(w)?"Reja bor":"Bo'sh";
-    return `<button class="wp${w===rw?" on":""}${w===cw?" cur":""}" data-act="rweek" data-w="${w}"><b>${esc(weekRange(w))}</b><span>${esc(lbl)}</span></button>`; }).join("")}</div>`;
+  h+=`<div class="wkp" role="group" aria-label="Haftalar">${groups.map(g=>`<div class="wg"><span class="wgl">${esc(g.label)}</span><div class="wgr">${g.ws.map(w=>{ const m=callsByWeek.get(w), n=m?m.size:0;
+    const lbl=w===cw?"Shu hafta":n?`${n} ta qo'ng'iroq`:state.plans.has(w)?"Reja bor":"";
+    return `<button class="wp${w===rw?" on":""}${w===cw?" cur":""}${w<cw?" past":""}" data-act="rweek" data-w="${w}"><b>${esc(weekRange(w))}</b><span>${lbl?esc(lbl):"&nbsp;"}</span></button>`; }).join("")}</div></div>`).join("")}</div>`;
   if(v!=="hammasi"){
     h+=`<div class="card dstrip">${weekDays(rw).map(d=>{ const c=counts(callsFor(d)), dd=parseD(d);
       return `<button class="ds${d===state.day?" on":""}${d===t?" td":""}${d<t?" ps":""}" data-act="rday" data-day="${d}"><span class="dw">${WD[dd.getDay()]}</span><span class="dn">${dd.getDate()}</span><span class="dc">${c.total?`${c.done}/${c.total}`:"&nbsp;"}</span><i class="dbar"><i style="width:${c.total?Math.max(4,c.done/c.total*100):0}%"></i></i></button>`; }).join("")}</div>`;
@@ -992,18 +1016,36 @@ function renderTolovlar(){
   const list=F[state.pf][1].slice().sort((a,b)=>{ const pa=payState(a), pb=payState(b);
     return (pb.debt-pa.debt) || (order[pa.k]-order[pb.k]) || ((pa.b.paidUntil||"9").localeCompare(pb.b.paidUntil||"9")) || (a.name||"").localeCompare(b.name||""); });
   const tile=(f,col,icon,val,sub,lbl,cls)=>`<button class="card tile pt${state.pf===f?" on":""}" data-act="pfilter" data-f="${f}"><span class="ic" style="background:${col}">${icon}</span><b${cls?` class="${cls}"`:""}>${val}</b><span class="ts">${sub}</span><span>${lbl}</span></button>`;
-  let h=`<div class="pmnav"><button data-act="pmonth" data-n="-1" aria-label="Oldingi oy">‹</button><b>${esc(mn)} ${pm.slice(0,4)}</b><button data-act="pmonth" data-n="1" aria-label="Keyingi oy">›</button>${pm!==cm?`<button class="linkbtn" data-act="pmonth" data-n="0">Shu oy</button>`:""}</div>
+  const yr=pm.slice(0,4);
+  let h=`<div class="ptools"><div class="tb pmsw"><button data-act="pmonth" data-n="-1" aria-label="Oldingi oy">‹</button><button data-act="pmonth" data-n="0" title="Shu oyga qaytish">${esc(mn)} ${yr}</button><button data-act="pmonth" data-n="1" aria-label="Keyingi oy">›</button></div>
+    <div class="seg pseg" role="group" aria-label="Filtr">${["attn","soon","over","all","nodata"].map(k=>`<button data-act="pfilter" data-f="${k}" aria-pressed="${state.pf===k}">${esc(F[k][0])}<em>${F[k][1].length}</em></button>`).join("")}</div></div>
   <div class="stats pstats">
-    ${tile("paid","var(--green)",ICON.card,esc(money(cashSum)),`${cash.length} ta to'lov${fut?" (hali kelmagan oy)":""}`,`${mn}da tushgan`,"good")}
+    ${tile("paid","var(--green)",ICON.card,esc(money(cashSum)),`${cash.length} ta to'lov${fut?" · oy hali kelmagan":""}`,`${mn}da tushgan`,"good")}
     ${tile("expect","var(--orange)",ICON.clock,esc(money(expSum)),`${expect.length} ta mijoz${expLate?` · ${expLate} tasi kechikkan`:""}`,`${mn}da ${past?"to'lashi kerak edi":"kutilmoqda"}`)}
     ${tile("debt","var(--red)",ICON.card,esc(money(debt)),`${debtors.length} ta mijoz`,"Qarzdorlik",debt>0?"bad":"")}
-    ${tile("all","var(--blue)",ICON.list||ICON.card,esc(money(mrr)),`${active.length} ta faol obuna, oyga bo'lingan`,"Obunalar qiymati oyiga","muted")}
-  </div>
-  <p class="hint pnote">«Obunalar qiymati oyiga» — oldindan 3–6 oyga to'langan summalarning bir oyga to'g'ri keladigan qismi. Bu oy kassaga tushgan pul emas; tushgan pul birinchi kartada.</p>`;
-  h+=`<div class="card"><div class="chipsrow pchips" role="group" aria-label="Filtr">${Object.entries(F).map(([k,[l,a]])=>`<button class="chip" data-act="pfilter" data-f="${k}" aria-pressed="${state.pf===k}">${esc(l)} ${a.length}</button>`).join("")}</div>
-    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Tarif</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<p class="empty">${state.pf==="nodata"?"Hamma faol mijozlarda to'lov ma'lumoti bor.":"Bu filtrda mijoz yo'q."}</p>`}</div>`;
-  if(nodata.length && state.pf!=="nodata") h+=`<p class="hint" style="margin:12px 4px">${nodata.length} ta faol mijozda to'lov ma'lumoti yo'q. «Ma'lumot yo'q» filtrida ularni ochib, sana va summani kiriting.</p>`;
+    ${tile("all","var(--blue)",ICON.card,esc(money(mrr)),`${active.length} ta obuna · kassa emas`,"Obunalar qiymati oyiga","muted")}
+  </div>`;
+  if(nodata.length && state.pf!=="nodata") h+=`<button class="card pbanner" data-act="pfilter" data-f="nodata"><span class="ic" style="background:var(--orange)">${ICON.clock}</span><span class="rt"><b>${nodata.length} ta faol mijozda to'lov ma'lumoti yo'q</b><span>Ularni ochib, keyingi to'lov sanasi va summani kiriting — shunda hisob to'liq bo'ladi.</span></span><span class="linkbtn">Ko'rish</span>${ICON.chev}</button>`;
+  const title=F[state.pf][0];
+  const emptyMsg={paid:`${mn}da hali to'lov kiritilmagan.`, expect:`${mn}da muddati tugaydigan obuna yo'q.`, debt:"Qarzdor mijoz yo'q.", soon:"Keyingi 7 kunda to'lovi keladigan mijoz yo'q.", over:"Muddati o'tgan obuna yo'q.", attn:"Hozir e'tibor talab qiladigan to'lov yo'q.", nodata:"Hamma faol mijozlarda to'lov ma'lumoti bor.", all:"To'lov ma'lumoti bor mijoz yo'q."}[state.pf];
+  h+=`<div class="card"><div class="ct"><h3>${esc(title)}</h3><em class="cnt">${list.length}</em><button class="linkbtn more" data-act="paypick">+ To'lov kiritish</button></div>
+    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Tarif</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<div class="emptyc sm"><p>${esc(emptyMsg)}</p><div class="actions"><button class="ghost" data-act="paypick">+ To'lov kiritish</button></div></div>`}</div>`;
   return h;
+}
+function payPickList(q){
+  q=String(q||"").trim().toLowerCase();
+  let l=[...state.clients.values()];
+  if(q) l=l.filter(c=>[c.name,c.domain,c.contact,c.phone].some(v=>String(v||"").toLowerCase().includes(q)));
+  const rank=c=>c.st==="faol"?0:c.st==="lid"?1:c.st==="yangi"?2:3;
+  l.sort((a,b)=>(payState(b).attn-payState(a).attn)||rank(a)-rank(b)||(a.name||"").localeCompare(b.name||""));
+  return l.slice(0,40).map(c=>{ const ps=payState(c); return `<button class="r cr" data-act="paysheet" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${esc(CST[c.st]||"")}${c.domain?" · "+esc(c.domain):""}</span></span>${hasBilling(c)?payPill(ps):""}</button>`; }).join("") || `<p class="empty sm">Topilmadi.</p>`;
+}
+function openPayPicker(){
+  state.sheet={kind:"paypick"}; $("#ov").hidden=false; $("#sheet").className="sheet";
+  $("#sheet").innerHTML=`<div class="sheet-top"><div><h2>To'lov kiritish</h2><div class="ev-sub" style="margin-top:4px">Qaysi mijoz to'ladi?</div></div><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <input class="f srch" id="pp-q" type="search" placeholder="Klinika nomi, sayt yoki telefon" autocomplete="off">
+    <div class="card pplist" id="pp-list" style="margin-top:12px">${payPickList("")}</div>`;
+  setTimeout(()=>{ const f=$("#pp-q"); if(f) f.focus(); },50);
 }
 function openPaySheet(id){
   const c=state.clients.get(id); if(!c) return;
@@ -1033,6 +1075,7 @@ function openPaySheet(id){
       <div class="actions"><button class="ghost" type="submit">Saqlash</button>${b.syncedAt?`<span class="hint" style="margin:0">Oxirgi yangilanish: ${esc(dLabel(b.syncedAt))}</span>`:""}</div>
     </form>`;
   payPreview();
+  setTimeout(()=>{ const f=$("#p-amt"); if(f&&!f.value) f.focus(); },50);
 }
 const num=v=>{ const n=Number(String(v||"").replace(/[^\d.]/g,"")); return isFinite(n)?n:0; };
 function payPreview(){
@@ -1182,12 +1225,12 @@ function doRender(){
   $("#subLabel").textContent = state.tab==="bugun" ? dFull(t)
     : state.tab==="kalendar" ? `${cap1(MF[cd.getMonth()])} ${cd.getFullYear()}`
     : state.tab==="mijozlar" ? `${state.clients.size} ta klinika`
-    : state.tab==="tolovlar" ? `${dLabel(t)} holatiga`
+    : state.tab==="tolovlar" ? `${dLabel(t)} holatiga · ${state.clients.size} ta klinika`
     : `${cap1(MF[parseD(weekMon(state.rweek)).getMonth()])} · ${weekRange(state.rweek)}${callsFor(null).length?` · ${counts(callsFor(null)).done} / ${callsFor(null).length} bajarildi`:""}`;
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
-  const fab=$("#fab"); fab.hidden=!state.db || state.tab==="tolovlar";
-  fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="reja" ? "+ Qo'ng'iroq" : wide ? "+ Uchrashuv" : "+ Kalendarga";
+  const fab=$("#fab"); fab.hidden=!state.db;
+  fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="tolovlar" ? "+ To'lov" : state.tab==="reja" ? "+ Qo'ng'iroq" : wide ? "+ Uchrashuv" : "+ Kalendarga";
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
@@ -1254,6 +1297,7 @@ document.addEventListener("click", async e=>{
       state.confirmDel=null; state.payments.delete(id); const cid=state.sheet.id; openPaySheet(cid); doRender();
       state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
     }
+    case "paypick": openPayPicker(); return;
     case "paysheet": { const bk=state.sheet&&state.sheet.kind==="client"?state.sheet.id:null; openPaySheet(id); if(state.sheet) state.sheet.back=bk; return; }
     case "focususers": { const f=$("#c-users"); if(f){ f.focus(); f.select(); } return; }
     case "quicktask": { const cid=b.dataset.client, onPhone=state.sheet&&state.sheet.kind==="client";
@@ -1327,7 +1371,7 @@ document.addEventListener("click", async e=>{
     }
   }
 });
-$("#fab").addEventListener("click", ()=>{ if(state.tab==="mijozlar") openClientForm(); else if(state.tab==="reja") openCallForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:todayStr()}); });
+$("#fab").addEventListener("click", ()=>{ if(state.tab==="tolovlar") openPayPicker(); else if(state.tab==="mijozlar") openClientForm(); else if(state.tab==="reja") openCallForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:todayStr()}); });
 $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
 document.addEventListener("change", e=>{
@@ -1347,6 +1391,7 @@ document.addEventListener("change", e=>{
 document.addEventListener("input", e=>{
   const t=e.target;
   if(t.id==="p-amt"||t.id==="p-date"){ payPreview(); return; }
+  if(t.id==="pp-q"){ const l=$("#pp-list"); if(l) l.innerHTML=payPickList(t.value); return; }
   if(t.id==="gsearch"){
     if(!t.value) return;
     state.cq=t.value; state.cf="all"; state.tab="mijozlar"; t.value=""; doRender();
@@ -1418,7 +1463,7 @@ document.addEventListener("submit", async e=>{
       if(!amt){ $("#p-err").textContent="To'lov summasini kiriting."; return; }
       b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
       if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
-      if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; }
+      if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; if(!Number(b.monthly)) b.monthly=Math.round(amt/n); }
       try{ const pid=uid("p"); const row={clientId:id, amount:amt, paidAt:date, months:ext?n:null}; await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
         await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
       catch(er){ $("#p-err").textContent=failMsg(er); }
