@@ -543,6 +543,9 @@ form.list{display:flex;flex-direction:column;gap:14px}
 @container (min-width:720px){ .sub2{grid-template-columns:1fr 1fr;gap:24px} }
 .rs0{gap:12px} .rs0 .cap{white-space:nowrap} .rs0 .linkbtn{white-space:nowrap}
 @container (max-width:520px){ .prof .acts{grid-template-columns:repeat(5,1fr)} .prof .act{font-size:11px} .rs0{flex-wrap:wrap} }
+/* subscription periods */
+.pper{display:flex;flex-direction:column;gap:10px}
+.prow .rt>b{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body class="auth">
@@ -1036,7 +1039,7 @@ function payPill(ps){
 const sumMoney=list=>list.reduce((a,x)=>a+(Number(x)||0),0);
 state.payments=new Map(); state.pm=todayStr().slice(0,7);
 const monthName=ym=>{ const [y,m]=ym.split("-").map(Number); return cap1(MF[m-1]); };
-const paysOf=id=>[...state.payments.values()].filter(x=>x.clientId===id).sort((a,b)=>(b.paidAt||"").localeCompare(a.paidAt||""));
+const paysOf=id=>[...state.payments.values()].filter(x=>x.clientId===id).sort((a,b)=>((b.periodTo||b.paidAt||"")+(b.paidAt||"")).localeCompare((a.periodTo||a.paidAt||"")+(a.paidAt||"")));
 const renewAmt=b=>(Number(b.monthly)||0)*(Number(b.periodMonths)||1);
 function tolovRow(c){
   const ps=payState(c), b=ps.b, per=Number(b.periodMonths)||1, last=paysOf(c.id)[0];
@@ -1118,27 +1121,30 @@ function openPaySheet(id){
     <div class="sheet-top"><div><h2>${esc(c.name)}</h2><div class="ev-sub" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${payPill(ps)}${ps.debt?`<span class="pill red">Qarz ${esc(money(b.outstanding,b.currency))}</span>`:""}<button class="linkbtn" data-act="client" data-id="${esc(id)}">Mijoz kartasi</button></div></div><button class="x" data-act="close" aria-label="Yopish">×</button></div>
     <span class="cap pad" style="padding-top:4px">To'lov qabul qilish</span>
     <form id="payForm" class="comp" novalidate>
-      <div class="two"><div><label class="lbl" for="p-amt">Summa, so'm <span class="req">*</span></label><input class="f" id="p-amt" inputmode="numeric" value="${due?Math.round(due):""}" placeholder="0"></div>
-        <div><label class="lbl" for="p-date">Sana</label><input class="f" id="p-date" type="date" value="${todayStr()}"></div></div>
-      <label class="chkl"><input type="checkbox" id="p-ext" ${ps.debt?"":"checked"}> Obunani uzaytirish:
-        <select class="f inl2" id="p-mon">${[1,2,3,6,12].map(n=>`<option value="${n}"${n===per?" selected":""}>${n} oyga</option>`).join("")}</select></label>
+      <div class="two"><div><label class="lbl" for="p-amt">Summa, so'm <span class="req">*</span></label><input class="f" id="p-amt" data-money inputmode="numeric" value="${fmtN(due)}" placeholder="0"></div>
+        <div><label class="lbl" for="p-date">To'langan sana</label><input class="f" id="p-date" type="date" value="${todayStr()}"></div></div>
+      <label class="chkl"><input type="checkbox" id="p-ext" ${ps.debt?"":"checked"}> Obuna davrini qo'shish</label>
+      <div class="pper" id="p-per">
+        <div class="qd" role="group" aria-label="Necha oy">${[1,2,3,6,12].map(n=>`<button type="button" class="chip" data-act="pmon" data-n="${n}" aria-pressed="${n===per}">${n} oy</button>`).join("")}<input type="hidden" id="p-mon" value="${per}"></div>
+        <div class="two"><div><label class="lbl" for="p-from">Davr boshi</label><input class="f" id="p-from" type="date" value="${esc(b.paidUntil||todayStr())}"></div><div><label class="lbl" for="p-to">Davr oxiri (keyingi to'lov)</label><input class="f" id="p-to" type="date" value="${esc(addMonths(b.paidUntil||todayStr(),per))}"></div></div>
+      </div>
       <div class="hint" id="p-prev" style="margin:0"></div>
       <div class="err" id="p-err"></div>
       <div class="actions"><button class="primary" type="submit">To'lovni saqlash</button></div>
     </form>
-    ${paysOf(id).length?`<span class="cap pad">To'lovlar tarixi</span><div class="gl2">${paysOf(id).map(x=>state.payEdit===x.id?`<form class="pedit" id="peForm" data-id="${esc(x.id)}" novalidate>
-        <div class="two"><div><label class="lbl" for="pe-amt">Summa, so'm</label><input class="f" id="pe-amt" inputmode="numeric" value="${Math.round(x.amount)}"></div><div><label class="lbl" for="pe-date">Sana</label><input class="f" id="pe-date" type="date" value="${esc(x.paidAt||"")}"></div></div>
-        <div class="two"><div><label class="lbl" for="pe-mon">Necha oyga</label><select class="f" id="pe-mon"><option value="">—</option>${[1,2,3,6,12].map(n=>`<option value="${n}"${n===Number(x.months)?" selected":""}>${n} oyga</option>`).join("")}</select></div><div><label class="lbl" for="pe-note">Izoh</label><input class="f" id="pe-note" value="${esc(x.note||"")}"></div></div>
-        <p class="hint" style="margin:0">Obuna muddati o'zgarishi kerak bo'lsa, pastdagi «Keyingi to'lov sanasi»ni ham tuzating.</p>
+    ${paysOf(id).length?`<span class="cap pad">Obunalar va to'lovlar tarixi</span><div class="gl2">${paysOf(id).map(x=>state.payEdit===x.id?`<form class="pedit" id="peForm" data-id="${esc(x.id)}" novalidate>
+        <div class="two"><div><label class="lbl" for="pe-amt">Summa, so'm</label><input class="f" id="pe-amt" data-money inputmode="numeric" value="${fmtN(x.amount)}"></div><div><label class="lbl" for="pe-date">To'langan sana</label><input class="f" id="pe-date" type="date" value="${esc(x.paidAt||"")}"></div></div>
+        <div class="two"><div><label class="lbl" for="pe-from">Davr boshi</label><input class="f" id="pe-from" type="date" value="${esc(x.periodFrom||"")}"></div><div><label class="lbl" for="pe-to">Davr oxiri</label><input class="f" id="pe-to" type="date" value="${esc(x.periodTo||"")}"></div></div>
+        <div><label class="lbl" for="pe-note">Izoh</label><input class="f" id="pe-note" value="${esc(x.note||"")}"></div>
         <div class="err" id="pe-err"></div>
         <div class="actions"><button class="primary" type="submit">Saqlash</button><button class="ghost" type="button" data-act="payedit" data-id="">Bekor qilish</button></div></form>`
-      :`<div class="r"><div class="rt"><b>${esc(money(x.amount))}</b><span>${esc(dLabel(x.paidAt))} ${x.paidAt?esc(x.paidAt.slice(0,4)):""}${x.months?` · ${x.months} oyga`:""}${x.note?` · ${esc(x.note)}`:""}</span></div><button class="linkbtn" data-act="payedit" data-id="${esc(x.id)}">Tahrirlash</button><button class="linkbtn del" data-act="paydel" data-id="${esc(x.id)}">${state.confirmDel==="pay:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>`).join("")}</div>`:""}
+      :`<div class="r prow"><div class="rt"><b>${x.periodFrom&&x.periodTo?`${esc(dLabelY(x.periodFrom))} – ${esc(dLabelY(x.periodTo))}`:esc(money(x.amount))}</b><span>${x.periodFrom?`${esc(money(x.amount))} · `:""}to'langan ${esc(dLabelY(x.paidAt))}${x.months?` · ${x.months} oy`:""}${x.note?` · ${esc(x.note)}`:""}</span></div><button class="linkbtn" data-act="payedit" data-id="${esc(x.id)}">Tahrirlash</button><button class="linkbtn del" data-act="paydel" data-id="${esc(x.id)}">${state.confirmDel==="pay:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>`).join("")}</div>${state.confirmDel&&state.confirmDel.startsWith("pay:")?`<p class="hint" style="margin:6px 4px 0">O'chirilsa, obuna muddati shu davr boshiga qaytadi.</p>`:""}`:""}
     <span class="cap pad">Obuna ma'lumoti</span>
     <form id="subForm" class="comp" novalidate>
       <div class="two"><div><label class="lbl" for="s-until">Keyingi to'lov sanasi</label><input class="f" id="s-until" type="date" value="${esc(b.paidUntil||"")}"></div>
-        <div><label class="lbl" for="s-mon">Oylik summa, so'm</label><input class="f" id="s-mon" inputmode="numeric" value="${b.monthly!=null?Math.round(b.monthly):""}" placeholder="0"></div></div>
+        <div><label class="lbl" for="s-mon">Oylik summa, so'm</label><input class="f" id="s-mon" data-money inputmode="numeric" value="${fmtN(b.monthly)}" placeholder="0"></div></div>
       <div class="two"><div><label class="lbl" for="s-per">Tarif</label><select class="f" id="s-per"><option value="">—</option>${[1,2,3,6,12].map(n=>`<option value="${n}"${n===Number(b.periodMonths)?" selected":""}>${n} oylik</option>`).join("")}</select></div>
-        <div><label class="lbl" for="s-debt">Qarz, so'm</label><input class="f" id="s-debt" inputmode="numeric" value="${b.outstanding?Math.round(b.outstanding):""}" placeholder="0"></div></div>
+        <div><label class="lbl" for="s-debt">Qarz, so'm</label><input class="f" id="s-debt" data-money inputmode="numeric" value="${fmtN(b.outstanding)}" placeholder="0"></div></div>
       <div class="err" id="s-err"></div>
       <div class="actions"><button class="ghost" type="submit">Saqlash</button>${b.syncedAt?`<span class="hint" style="margin:0">Oxirgi yangilanish: ${esc(dLabel(b.syncedAt))}</span>`:""}</div>
     </form>`;
@@ -1146,27 +1152,30 @@ function openPaySheet(id){
   setTimeout(()=>{ const f=$("#p-amt"); if(f&&!f.value) f.focus(); },50);
 }
 const num=v=>{ const n=Number(String(v||"").replace(/[^\d.]/g,"")); return isFinite(n)?n:0; };
+const fmtN=v=>{ const n=Math.round(Number(v)||0); return n?n.toLocaleString("ru-RU").replace(/[\u00a0\u202f,]/g," "):""; };
+const dLabelY=s=>{ if(!s) return ""; const d=parseD(s); return `${d.getDate()}-${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 function payPreview(){
   const el=$("#p-prev"); if(!el||!state.sheet||state.sheet.kind!=="pay") return;
   const c=state.clients.get(state.sheet.id), b=(c&&c.billing)||{};
-  const amt=num($("#p-amt").value), ext=$("#p-ext").checked, n=Number($("#p-mon").value);
+  const amt=num($("#p-amt").value), ext=$("#p-ext").checked;
+  const pp=$("#p-per"); if(pp) pp.hidden=!ext;
   const parts=[];
-  if(ext){ const base=b.paidUntil||$("#p-date").value||todayStr(); parts.push(`Keyingi to'lov ${dLabel(base)} → ${dLabel(addMonths(base,n))}`); }
-  if(Number(b.outstanding)>0 && amt) parts.push(`Qarz ${money(b.outstanding)} → ${money(Math.max(0,b.outstanding-amt))}`);
+  if(ext){ const f=$("#p-from").value, to=$("#p-to").value; if(f&&to) parts.push(`Obuna: ${dLabelY(f)} – ${dLabelY(to)}`); if(b.paidUntil && to && b.paidUntil!==to) parts.push(`keyingi to'lov ${dLabel(b.paidUntil)} → ${dLabel(to)}`); }
+  if(Number(b.outstanding)>0 && amt) parts.push(`qarz ${money(b.outstanding)} → ${money(Math.max(0,b.outstanding-amt))}`);
   el.textContent=parts.join(" · ");
 }
 
 /* ---------- shared save: payment ---------- */
-async function recordPayment(id, amt, date, ext, n){
+async function recordPayment(id, amt, date, ext, n, from, to){
   const c=state.clients.get(id); if(!c) throw new Error("no client");
   const b={...(c.billing||{})}, t=todayStr();
   b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
   if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
-  if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; if(!Number(b.monthly)) b.monthly=Math.round(amt/n); }
-  const pid=uid("p"), row={clientId:id, amount:amt, paidAt:date, months:ext?n:null};
+  if(ext){ from=from||b.paidUntil||date; to=to||addMonths(from,n); b.paidUntil=to; b.periodMonths=n; if(!Number(b.monthly)) b.monthly=Math.round(amt/n); }
+  const pid=uid("p"), row={clientId:id, amount:amt, paidAt:date, months:ext?n:null, periodFrom:ext?from:null, periodTo:ext?to:null};
   await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
   await updateClient(id,{billing:b});
-  await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date});
+  await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${dLabelY(from)} – ${dLabelY(to)}`:""}`, date});
 }
 
 /* ---------- gapirib kiritish: rule-based parser (no AI, runs on device; Uzbek + Russian) ---------- */
@@ -1373,7 +1382,7 @@ function qRender(){
     let f="";
     if(a.kind==="hist") f=`<select class="f inl2" data-qi="${i}" data-qf="type">${Object.entries(H_TYPES).map(([k,l])=>`<option value="${k}"${a.type===k?" selected":""}>${l}</option>`).join("")}</select><input class="f grow" data-qi="${i}" data-qf="text" value="${esc(a.text)}">`;
     if(a.kind==="status") f=`<select class="f inl2" data-qi="${i}" data-qf="st">${STATUSES.map(x=>`<option value="${x.k}"${a.st===x.k?" selected":""}>${esc(x.l)}</option>`).join("")}</select><span class="hint" style="margin:0">rejadagi bugungi qo'ng'iroq</span>`;
-    if(a.kind==="pay") f=`<input class="f w120" inputmode="numeric" data-qi="${i}" data-qf="amount" value="${a.amount}"> so'm <select class="f inl2" data-qi="${i}" data-qf="months">${[1,2,3,6,12].map(n=>`<option value="${n}"${n===a.months?" selected":""}>${n} oyga</option>`).join("")}</select><label class="chkl sm"><input type="checkbox" data-qi="${i}" data-qf="ext" ${a.ext?"checked":""}> obunani uzaytirish</label>`;
+    if(a.kind==="pay") f=`<input class="f w120" inputmode="numeric" data-qi="${i}" data-qf="amount" value="${fmtN(a.amount)}"> so'm <select class="f inl2" data-qi="${i}" data-qf="months">${[1,2,3,6,12].map(n=>`<option value="${n}"${n===a.months?" selected":""}>${n} oyga</option>`).join("")}</select><label class="chkl sm"><input type="checkbox" data-qi="${i}" data-qf="ext" ${a.ext?"checked":""}> obunani uzaytirish</label>`;
     if(a.kind==="event") f=`<select class="f inl2" data-qi="${i}" data-qf="type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${a.type===k?" selected":""}>${l}</option>`).join("")}</select><input class="f w150" type="date" data-qi="${i}" data-qf="date" value="${esc(a.date)}"><input class="f w110" type="time" data-qi="${i}" data-qf="time" value="${esc(a.time)}"><input class="f grow" data-qi="${i}" data-qf="title" value="${esc(a.title)}">`;
     return `<div class="qrow${a.on?"":" off"}"><input type="checkbox" class="qon" data-qi="${i}" data-qf="on" ${a.on?"checked":""} aria-label="Saqlash"><div class="qbody"><div class="qhd"><i class="dot" style="background:${QICON[a.kind]}"></i><b>${QKIND[a.kind]}</b>${qClientInput(a,i)}</div><div class="qf">${f}</div></div></div>`;
   };
@@ -1620,10 +1629,17 @@ document.addEventListener("click", async e=>{
     case "payedit": { state.payEdit=b.dataset.id||null; state.confirmDel=null; const bk=state.sheet.back; openPaySheet(state.sheet.id); state.sheet.back=bk; return; }
     case "paydel": {
       if(state.confirmDel!=="pay:"+id){ state.confirmDel="pay:"+id; openPaySheet(state.sheet.id); return; }
-      state.confirmDel=null; state.payments.delete(id); const cid=state.sheet.id; openPaySheet(cid); doRender();
+      state.confirmDel=null; const cid=state.sheet.id, x=state.payments.get(id), wasLatest=paysOf(cid)[0]===x; state.payments.delete(id);
+      const c=state.clients.get(cid);
+      if(c && x && wasLatest){ const b={...(c.billing||{})}, nx=paysOf(cid)[0];
+        if(x.periodTo && b.paidUntil===x.periodTo) b.paidUntil = x.periodFrom || (nx&&nx.periodTo) || null;
+        if(nx){ b.lastPaidAmount=nx.amount; b.lastPaidAt=nx.paidAt; } else { delete b.lastPaidAmount; delete b.lastPaidAt; }
+        updateClient(cid,{billing:b}); }
+      const bk=state.sheet.back; openPaySheet(cid); state.sheet.back=bk; doRender();
       state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
     }
     case "paypick": openPayPicker(); return;
+    case "pmon": { const n=Number(b.dataset.n); $("#p-mon").value=n; document.querySelectorAll('[data-act="pmon"]').forEach(x=>x.setAttribute("aria-pressed",String(x===b))); const f=$("#p-from").value; if(f) $("#p-to").value=addMonths(f,n); payPreview(); return; }
     case "quick": openQuick(); return;
     case "qmic": qMic(); return;
     case "qpick": { const a=state.qacts[Number(b.dataset.i)]; if(a){ a.clientId=b.dataset.id; a.inherited=false; qRender(); } return; }
@@ -1741,6 +1757,8 @@ addEventListener("popstate", e=>{
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
 document.addEventListener("change", e=>{
   const t=e.target;
+  if(t.id==="p-from"){ const f=t.value; if(f) $("#p-to").value=addMonths(f,Number($("#p-mon").value)||1); payPreview(); return; }
+  if(t.id==="p-to"){ payPreview(); return; }
   if(t.id==="p-ext"||t.id==="p-mon"||t.id==="p-date"){ payPreview(); return; }
   if(t.id==="q-lang"){ try{ localStorage.setItem("zq-lang",t.value); }catch(_){} if(qRec) qMicReset(""); return; }
   if(t.dataset&&t.dataset.qi!=null){ qSet(t); if(t.dataset.qf==="on"||t.dataset.qf==="client") qRender(); return; }
@@ -1757,6 +1775,7 @@ document.addEventListener("change", e=>{
 });
 document.addEventListener("input", e=>{
   const t=e.target;
+  if(t.dataset && "money" in t.dataset){ const pos=t.value.length-t.selectionStart; t.value=fmtN(num(t.value)); try{ const p=Math.max(0,t.value.length-pos); t.setSelectionRange(p,p); }catch(_){} if(t.id==="p-amt") payPreview(); return; }
   if(t.id==="p-amt"||t.id==="p-date"){ payPreview(); return; }
   if(t.id==="q-text"){ clearTimeout(timers.q); timers.q=setTimeout(qRun,450); return; }
   if(t.dataset&&t.dataset.qi!=null&&t.dataset.qf!=="on"&&t.dataset.qf!=="ext"){ qSet(t); return; }
@@ -1826,13 +1845,15 @@ document.addEventListener("submit", async e=>{
   }
   if(f.id==="peForm"){
     const pid=f.dataset.id, x=state.payments.get(pid), cid=state.sheet&&state.sheet.id; if(!x||!cid) return;
-    const amt=num($("#pe-amt").value), date=$("#pe-date").value, mon=$("#pe-mon").value, note=$("#pe-note").value.trim();
-    if(!amt){ $("#pe-err").textContent="Summani kiriting."; return; } if(!date){ $("#pe-err").textContent="Sanani tanlang."; return; }
-    const patch={amount:amt, paidAt:date, months:mon?Number(mon):null, note:note||null};
+    const amt=num($("#pe-amt").value), date=$("#pe-date").value, pf=$("#pe-from").value||null, pt=$("#pe-to").value||null, note=$("#pe-note").value.trim();
+    if(!amt){ $("#pe-err").textContent="Summani kiriting."; return; } if(!date){ $("#pe-err").textContent="To'langan sanani tanlang."; return; }
+    if((pf&&!pt)||(!pf&&pt)||(pf&&pt&&pt<=pf)){ $("#pe-err").textContent="Davrni to'liq va to'g'ri kiriting: oxiri boshidan keyin bo'lsin."; return; }
+    const months=pf&&pt?Math.max(1,Math.round(daysBetween(pf,pt)/30.4)):null;
+    const patch={amount:amt, paidAt:date, periodFrom:pf, periodTo:pt, months, note:note||null};
     try{
       await state.db.doc("payments/"+pid).update(patch); Object.assign(x,patch);
       const latest=paysOf(cid)[0], c=state.clients.get(cid);
-      if(latest && latest.id===pid && c){ const b={...(c.billing||{})}; b.lastPaidAmount=amt; b.lastPaidAt=date; await updateClient(cid,{billing:b}); }
+      if(latest && latest.id===pid && c){ const b={...(c.billing||{})}; b.lastPaidAmount=amt; b.lastPaidAt=date; if(pt){ b.paidUntil=pt; b.periodMonths=months; } await updateClient(cid,{billing:b}); }
       state.payEdit=null; const bk=state.sheet.back; openPaySheet(cid); state.sheet.back=bk; doRender();
     }catch(er){ $("#pe-err").textContent=failMsg(er); }
     return;
@@ -1841,9 +1862,10 @@ document.addEventListener("submit", async e=>{
     const id=state.sheet&&state.sheet.id, c=id&&state.clients.get(id); if(!c) return;
     const b={...(c.billing||{})}, t=todayStr();
     if(f.id==="payForm"){
-      const amt=num($("#p-amt").value), date=$("#p-date").value||t, ext=$("#p-ext").checked, n=Number($("#p-mon").value);
+      const amt=num($("#p-amt").value), date=$("#p-date").value||t, ext=$("#p-ext").checked, n=Number($("#p-mon").value), pf=$("#p-from").value, pt=$("#p-to").value;
+      if(ext && (!pf||!pt||pt<=pf)){ $("#p-err").textContent="Obuna davrini to'g'ri kiriting: oxiri boshidan keyin bo'lsin."; return; }
       if(!amt){ $("#p-err").textContent="To'lov summasini kiriting."; return; }
-      try{ await recordPayment(id, amt, date, ext, n); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
+      try{ await recordPayment(id, amt, date, ext, n, pf, pt); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
       catch(er){ $("#p-err").textContent=failMsg(er); }
       return;
     }
@@ -1879,7 +1901,7 @@ const COLS={
   events:["id","client_id","type","title","date","time","time_end","note","done","done_at","result","created_at"],
   calls:["id","week","day","ord","name","grp","task","st","phone","site","info","pri","note","client_id","hist_id","added","updated_at"],
   plans:["week","title","week_label","days","rules","blocks","is_current","updated_at"],
-  payments:["id","client_id","amount","paid_at","months","note","created_at"]
+  payments:["id","client_id","amount","paid_at","months","note","period_from","period_to","created_at"]
 };
 const toSnake=k=>k.replace(/[A-Z]/g,m=>"_"+m.toLowerCase());
 const toCamel=k=>k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
