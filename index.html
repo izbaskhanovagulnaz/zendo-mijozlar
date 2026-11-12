@@ -1048,7 +1048,7 @@ function tolovRow(c){
   return `<div class="r tr" data-act="client" data-id="${esc(c.id)}" role="button" title="Mijoz kartasini ochish">${avatar(c.name)}
     <div class="rt"><b>${esc(c.name)}</b><span>${esc(sub)}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
     ${payPill(ps)}
-    <span class="pc">${b.monthly?`${esc(money(renewAmt(b),b.currency))}<small>${per} oyga · oyiga ${esc(money(b.monthly,b.currency).replace(" so'm",""))}</small>`:"—"}</span>
+    <span class="pc">${b.monthly?`${esc(money(b.monthly,b.currency))}<small>oyiga · ${per} oylik ${esc(money(renewAmt(b),b.currency).replace(" so'm",""))}</small>`:"—"}</span>
     <span class="pc">${lastAmt?`${esc(money(lastAmt,b.currency))}<small>${lastAt?esc(dLabel(lastAt)):"sana noma'lum"}</small>`:"—"}</span>
     <button class="pbtn" data-act="paysheet" data-id="${esc(c.id)}" title="To'lov kiritish yoki tahrirlash">To'lov</button>${ICON.chev}</div>`;
 }
@@ -1094,7 +1094,7 @@ function renderTolovlar(){
   const title=F[state.pf][0];
   const emptyMsg={paid:`${mn}da hali to'lov kiritilmagan.`, expect:`${mn}da muddati tugaydigan obuna yo'q.`, debt:"Qarzdor mijoz yo'q.", soon:"Keyingi 7 kunda to'lovi keladigan mijoz yo'q.", over:"Muddati o'tgan obuna yo'q.", attn:"Hozir e'tibor talab qiladigan to'lov yo'q.", nodata:"Hamma faol mijozlarda to'lov ma'lumoti bor.", all:"To'lov ma'lumoti bor mijoz yo'q."}[state.pf];
   h+=`<div class="card"><div class="ct"><h3>${esc(title)}</h3><em class="cnt">${list.length}</em><button class="linkbtn more" data-act="paypick">+ To'lov kiritish</button></div>
-    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Tarif</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<div class="emptyc sm"><p>${esc(emptyMsg)}</p><div class="actions"><button class="ghost" data-act="paypick">+ To'lov kiritish</button></div></div>`}</div>`;
+    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Oylik to'lov</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<div class="emptyc sm"><p>${esc(emptyMsg)}</p><div class="actions"><button class="ghost" data-act="paypick">+ To'lov kiritish</button></div></div>`}</div>`;
   return h;
 }
 function payPickList(q){
