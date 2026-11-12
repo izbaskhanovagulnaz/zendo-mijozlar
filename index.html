@@ -359,6 +359,31 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .ygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:16px}
 .ym{font-weight:700;font-size:16px;color:var(--accent);margin-bottom:8px;display:block}
 .ygrid .mg button{width:28px;height:28px;font-size:12.5px}
+/* calendar: iOS-like time grid */
+.calc{display:flex;flex-direction:column}
+.wkscroll{overflow:auto;max-height:calc(100vh - 236px);min-height:300px}
+.wkh{padding:0;border-bottom:1px solid var(--sep)}
+.wkh button{border-left:1px solid var(--sep);padding:8px 0 6px}
+.wkh .td{color:var(--red-x)} .wkh .td b{background:var(--red);color:#fff;font-weight:600}
+.wkh .we,.dcol.we{background-color:rgba(118,118,128,.07)}
+.wkg{padding:0!important}
+.tcol span{right:8px;font-size:11px}
+.tcol .nowl{color:var(--red);font-weight:700;background:var(--card);padding:0 3px;right:5px;z-index:3;border-radius:4px}
+.dcol{border-left:1px solid var(--sep);background-image:repeating-linear-gradient(180deg,transparent 0 51px,var(--sep) 51px 52px)}
+.dcol.td{background-color:rgba(255,59,48,.045)}
+.nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none}
+.nowline::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--red)}
+.t-zoom{--c:var(--blue);--cx:var(--blue-x)} .t-call{--c:var(--orange);--cx:var(--orange-x)} .t-meet{--c:var(--purple);--cx:var(--purple-x)} .t-task{--c:var(--accent);--cx:var(--accent)}
+.evb{background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);box-shadow:none;border-radius:6px;padding:3px 6px}
+.evb span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
+.adr{display:grid;border-bottom:1px solid var(--sep)}
+.adl{font-size:10.5px;color:var(--ink3);text-align:right;padding:7px 8px 0 0}
+.adc{border-left:1px solid var(--sep);padding:3px;display:flex;flex-direction:column;gap:2px;min-height:28px;min-width:0}
+.evc{display:block;width:100%;text-align:left;font-size:12px;font-weight:600;border-radius:5px;padding:2px 6px;background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evc.dn{opacity:.5;text-decoration:line-through}
+.mn.td{background:var(--red);color:#fff}
+.ygrid .mg .s{background:var(--red);color:#fff}
+.me2 .dot{background:var(--c)!important}
 </style>
 </head>
 <body class="auth">
@@ -508,7 +533,7 @@ function evRow(e){
   const t=todayStr();
   const late=!e.done && (e.date<t || (e.date===t && e.time && e.time<nowTime()));
   const cl=e.clientId ? state.clients.get(e.clientId) : null;
-  const when=e.date===t ? (e.time||"vaqtsiz") : dLabel(e.date)+(e.time?" "+e.time:"");
+  const when=e.date===t ? (evSpan(e)||"vaqtsiz") : dLabel(e.date)+(e.time?" "+evSpan(e):"");
   return `<div class="r evr${e.done?" dn":""}${late?" late":""}">
     <button class="ck${e.done?" on":""}" data-act="evdone" data-id="${esc(e.id)}" aria-label="${e.done?"Bajarilmagan deb belgilash":"Bajarildi"}">${e.done?"✓":""}</button>
     <div class="rt"><b>${esc(e.title||EV_TYPES[e.type]||"")}</b>
@@ -595,7 +620,11 @@ function renderBugun(){
 }
 
 /* ---------- render: Kalendar ---------- */
-const HH=56, H0=8, H1=20;
+const HH=52, H0=0, H1=24;
+const minToT=m=>pad(Math.floor(m/60)%24)+":"+pad(m%60);
+const evEnd=e=>{ const a=tmin(e.time), z=tmin(e.timeEnd); return a==null?null:(z!=null&&z>a?z:a+60); };
+const evSpan=e=>e.time?e.time+(e.timeEnd?"–"+e.timeEnd:""):"";
+const evCls=e=>"t-"+(EVC[e.type]?e.type:"task");
 const tmin=s=>{ const m=/^(\d{1,2}):(\d{2})/.exec(String(s||"").trim()); return m?(+m[1])*60+(+m[2]):null; };
 function dayCard(){
   const evs=eventsOn(state.calDay);
@@ -612,19 +641,24 @@ function upcomingCard(){
 state.calView="week";
 const WD1=["Dush","Sesh","Chor","Pay","Jum","Shan","Yak"];
 function timeGrid(days){
-  const t=todayStr(), H=(H1-H0)*HH, cols=`grid-template-columns:58px repeat(${days.length},minmax(0,1fr))`;
-  const head=days.map(d=>{ const dd=parseD(d); const un=eventsOn(d).filter(e=>tmin(e.time)==null);
-    return `<button class="${d===t?"td":d<t?"ps":""}" data-act="goday" data-day="${d}">${WD[dd.getDay()]}<b>${dd.getDate()}</b>${un.slice(0,2).map(e=>`<i style="background:${EVC[e.type]||"var(--ink3)"}">${esc(e.title||EV_TYPES[e.type]||"")}</i>`).join("")}</button>`; }).join("");
-  let times=""; for(let hh=H0;hh<=H1;hh++) times+=`<span style="top:${(hh-H0)*HH}px">${pad(hh)}:00</span>`;
+  const t=todayStr(), H=(H1-H0)*HH, cols=`grid-template-columns:54px repeat(${days.length},minmax(0,1fr))`;
+  const now=new Date(), nowM=now.getHours()*60+now.getMinutes(), hasToday=days.includes(t);
+  const we=d=>parseD(d).getDay()%6===0;
+  const head=days.map(d=>{ const dd=parseD(d); return `<button class="${d===t?"td":""}${we(d)?" we":""}" data-act="goday" data-day="${d}">${WD[dd.getDay()]}<b>${dd.getDate()}</b></button>`; }).join("");
+  const un=days.map(d=>eventsOn(d).filter(e=>tmin(e.time)==null));
+  const allday=un.some(a=>a.length) ? `<div class="adr" style="${cols}"><span class="adl">kun bo'yi</span>${un.map(a=>`<div class="adc">${a.map(e=>`<button class="evc ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}">${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}</div>`).join("")}</div>` : "";
+  let times=""; for(let hh=1;hh<24;hh++) times+=`<span style="top:${hh*HH}px">${pad(hh)}:00</span>`;
+  if(hasToday) times+=`<span class="nowl" style="top:${nowM/60*HH}px">${nowTime()}</span>`;
   const body=days.map(d=>{
-    const evs=eventsOn(d).filter(e=>tmin(e.time)!=null).map(e=>({e,a:tmin(e.time),z:tmin(e.time)+45}));
+    const evs=eventsOn(d).filter(e=>tmin(e.time)!=null).map(e=>({e,a:tmin(e.time),z:evEnd(e)}));
     const lanes=[]; for(const x of evs){ let i=lanes.findIndex(end=>end<=x.a); if(i<0){ i=lanes.length; lanes.push(0); } lanes[i]=x.z; x.lane=i; }
-    const wdt=96/Math.max(lanes.length,1);
-    const h=evs.map(x=>{ const top=Math.max(0,Math.min(H-44,(x.a-H0*60)/60*HH)), cl=x.e.clientId?state.clients.get(x.e.clientId):null;
-      return `<button class="evb${x.e.done?" dn":""}" data-act="evedit" data-id="${esc(x.e.id)}" style="top:${top}px;height:42px;left:${2+x.lane*wdt}%;width:${wdt-1}%;background:${EVC[x.e.type]||"var(--ink3)"}"><b>${esc(x.e.title||EV_TYPES[x.e.type]||"")}</b>${esc(x.e.time)}${cl?" · "+esc(cl.name):""}</button>`; }).join("");
-    return `<div class="dcol" data-act="gridnew" data-day="${d}" style="height:${H}px">${h}</div>`;
+    const wdt=97/Math.max(lanes.length,1);
+    let h=evs.map(x=>{ const top=x.a/60*HH, ht=Math.max(22,(x.z-x.a)/60*HH-2), cl=x.e.clientId?state.clients.get(x.e.clientId):null;
+      return `<button class="evb ${evCls(x.e)}${x.e.done?" dn":""}" data-act="evedit" data-id="${esc(x.e.id)}" style="top:${top}px;height:${ht}px;left:${1+x.lane*wdt}%;width:${wdt-1}%"><b>${esc(x.e.title||EV_TYPES[x.e.type]||"")}</b><span>${esc(evSpan(x.e))}${cl?" · "+esc(cl.name):""}</span></button>`; }).join("");
+    if(d===t) h+=`<div class="nowline" style="top:${nowM/60*HH}px"></div>`;
+    return `<div class="dcol${d===t?" td":""}${we(d)?" we":""}" data-act="gridnew" data-day="${d}" style="height:${H}px">${h}</div>`;
   }).join("");
-  return `<div class="card"><div class="wkh" style="${cols}"><span></span>${head}</div><div class="wkg" style="${cols};padding:10px 0 12px"><div class="tcol" style="height:${H}px">${times}</div>${body}</div></div>`;
+  return `<div class="card calc"><div class="wkh" style="${cols}"><span></span>${head}</div>${allday}<div class="wkscroll"><div class="wkg" style="${cols}"><div class="tcol" style="height:${H}px">${times}</div>${body}</div></div></div>`;
 }
 function monthGrid(){
   const t=todayStr(), cd=parseD(state.calDay), y=cd.getFullYear(), m=cd.getMonth();
@@ -632,7 +666,7 @@ function monthGrid(){
   let h=`<div class="card"><div class="mhd">${WD1.map(x=>`<span>${x}</span>`).join("")}</div><div class="mgrid" style="grid-template-rows:repeat(${weeks},minmax(112px,1fr))">`;
   for(let i=0;i<weeks*7;i++){
     const d=new Date(y,m,1-off+i), ds=dstr(d), evs=eventsOn(ds);
-    h+=`<div class="mc${d.getMonth()!==m?" out":""}" data-act="monthnew" data-day="${ds}"><button class="mn${ds===t?" td":""}" data-act="goday" data-day="${ds}">${d.getDate()}</button>${evs.slice(0,3).map(e=>`<button class="me2${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}"><i class="dot" style="background:${EVC[e.type]||"var(--ink3)"}"></i>${e.time?`<em>${esc(e.time)}</em>`:""}${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}${evs.length>3?`<button class="mmore" data-act="goday" data-day="${ds}">yana ${evs.length-3} ta</button>`:""}</div>`;
+    h+=`<div class="mc${d.getMonth()!==m?" out":""}" data-act="monthnew" data-day="${ds}"><button class="mn${ds===t?" td":""}" data-act="goday" data-day="${ds}">${d.getDate()}</button>${evs.slice(0,3).map(e=>`<button class="me2 ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}"><i class="dot" style="background:${EVC[e.type]||"var(--ink3)"}"></i>${e.time?`<em>${esc(e.time)}</em>`:""}${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}${evs.length>3?`<button class="mmore" data-act="goday" data-day="${ds}">yana ${evs.length-3} ta</button>`:""}</div>`;
   }
   return h+`</div></div>`;
 }
@@ -844,7 +878,8 @@ function openEventForm(opts){
       <div><label class="lbl" for="e-type">Turi</label><select class="f" id="e-type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${(e?e.type:(opts.type||"zoom"))===k?" selected":""}>${l}</option>`).join("")}</select></div>
       <div><label class="lbl">Mijoz</label><div id="e-pickwrap">${clientPicker(e?e.clientId:(opts.clientId||null))}</div></div>
       <div><label class="lbl" for="e-title">Nima haqida <span class="req">*</span></label><input class="f" id="e-title" value="${esc(e?e.title:(opts.title||""))}" placeholder="Masalan: Kassa bo'yicha o'qitish"></div>
-      <div class="two"><div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}"></div><div><label class="lbl" for="e-time">Vaqt</label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div></div>
+      <div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}"></div>
+      <div class="two"><div><label class="lbl" for="e-time">Boshlanishi</label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div><div><label class="lbl" for="e-end">Tugashi</label><input class="f" id="e-end" type="time" value="${esc(e?e.timeEnd||"":minToT(tmin(opts.time||"15:00")+60))}"></div></div>
       <div><label class="lbl" for="e-note">Izoh</label><textarea class="f" id="e-note">${esc(e?e.note||"":"")}</textarea></div>
       <div class="err" id="e-err"></div>
       <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="ghost" data-act="evdone" data-id="${esc(e.id)}">${e.done?"Bajarilmadi":"Bajarildi"}</button>`:""}${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
@@ -928,7 +963,9 @@ function doRender(){
   const fab=$("#fab"); fab.hidden=!state.db;
   fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="reja" ? "+ Qo'ng'iroq" : wide ? "+ Uchrashuv" : "+ Kalendarga";
   renderSide();
+  const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : renderReja();
+  const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
 }
 
 /* ---------- writes ---------- */
@@ -1046,6 +1083,7 @@ $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
 document.addEventListener("change", e=>{
   const t=e.target;
+  if(t.id==="e-time"){ const en=$("#e-end"), a=tmin(t.value); if(en && a!=null && (!en.value || tmin(en.value)<=a)) en.value=minToT(Math.min(a+60,23*60+59)); return; }
   if(t.dataset.act==="block" && state.plan && state.db){
     const blocks=state.plan.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
     state.plan={...state.plan, blocks}; state.db.doc("meta/plan").update({blocks}).catch(er=>setNotice(failMsg(er))); doRender(); return;
@@ -1087,7 +1125,9 @@ document.addEventListener("submit", async e=>{
   if(f.id==="evForm"){
     const title=$("#e-title").value.trim(); if(!title){ $("#e-err").textContent="Nima haqida ekanini yozing."; return; }
     const date=$("#e-date").value; if(!date){ $("#e-err").textContent="Sanani tanlang."; return; }
-    const data={type:$("#e-type").value, clientId:$("#e-client").value||null, title, date, time:$("#e-time").value||"", note:$("#e-note").value.trim()};
+    const data={type:$("#e-type").value, clientId:$("#e-client").value||null, title, date, time:$("#e-time").value||"", timeEnd:$("#e-end").value||"", note:$("#e-note").value.trim()};
+    if(data.time && data.timeEnd && tmin(data.timeEnd)<=tmin(data.time)){ $("#e-err").textContent="Tugash vaqti boshlanishidan keyin bo'lishi kerak."; return; }
+    if(!data.time) data.timeEnd="";
     const id=state.sheet.id || uid("e"); const existing=state.events.get(id);
     try{
       if(existing){ await chain("events/"+id,()=>state.db.doc("events/"+id).update(data)); Object.assign(existing,data); }
@@ -1106,7 +1146,7 @@ document.addEventListener("submit", async e=>{
       await chain("events/"+ev.id,()=>state.db.doc("events/"+ev.id).update({done:true, doneAt:new Date().toISOString(), result:text}));
       Object.assign(ev,{done:true,result:text});
       if(ev.clientId){ await addHistory(ev.clientId,{type:ev.type==="task"?"note":ev.type, text: ev.title+(text?": "+text:""), tags, date:todayStr(), eventId:ev.id}); }
-      if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
+      if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", timeEnd:(ntime&&ev.time&&ev.timeEnd&&tmin(ev.timeEnd)>tmin(ev.time))?minToT(tmin(ntime)+tmin(ev.timeEnd)-tmin(ev.time)):"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
       const back=state.sheet.back; if(back) openClient(back); else closeSheet(); doRender();
     }catch(er){ $("#d-err").textContent=failMsg(er); }
     return;
@@ -1141,7 +1181,7 @@ const SB_KEY="sb_publishable_i1MW661-vQYTQrj23gMg-Q_BKV6xCnp";
 const COLS={
   clients:["id","name","site_id","domain","st","phone","contact","users","users_note","billing","last_contact_at","last_contact_text","created_at","updated_at"],
   history:["id","client_id","date","type","text","tags","call_id","event_id","created_at"],
-  events:["id","client_id","type","title","date","time","note","done","done_at","result","created_at"],
+  events:["id","client_id","type","title","date","time","time_end","note","done","done_at","result","created_at"],
   calls:["id","week","day","ord","name","grp","task","st","phone","site","info","pri","note","client_id","hist_id","added","updated_at"],
   plans:["week","title","week_label","days","rules","blocks","is_current","updated_at"]
 };
