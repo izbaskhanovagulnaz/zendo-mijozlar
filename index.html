@@ -1236,6 +1236,7 @@ function doRender(){
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
   for(const q of [".wkp .wp.on"]){ const el=document.querySelector(q); if(el&&el.parentElement.scrollWidth>el.parentElement.clientWidth) el.parentElement.scrollLeft=Math.max(0,el.offsetLeft-el.parentElement.offsetLeft-16); }
   const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
+  navSync();
 }
 
 /* ---------- writes ---------- */
@@ -1373,6 +1374,36 @@ document.addEventListener("click", async e=>{
 });
 $("#fab").addEventListener("click", ()=>{ if(state.tab==="tolovlar") openPayPicker(); else if(state.tab==="mijozlar") openClientForm(); else if(state.tab==="reja") openCallForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:todayStr()}); });
 $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
+/* ---------- history: trackpad swipe / ⌘[ / mouse back ---------- */
+let navRestoring=false, navSkip=false;
+const NAVK={all:["tab"], bugun:["bq"], kalendar:["calView","calDay"], mijozlar:["cf","selClient"], tolovlar:["pf","pm"], reja:["rweek","day","rejaView"]};
+function navSnap(){ const v={tab:state.tab}; for(const k of (NAVK[state.tab]||[])) v[k]=state[k]??null; return v; }
+function navSync(){
+  if(navRestoring||!state.db) return;
+  const v=navSnap(), hs=history.state, sheet=!$("#ov").hidden;
+  if(!hs||!hs.v){ history.replaceState({v,sheet},""); return; }
+  if(JSON.stringify(hs.v)!==JSON.stringify(v)) history.pushState({v,sheet},"");
+}
+new MutationObserver(()=>{
+  if(navRestoring||!state.db) return;
+  const open=!$("#ov").hidden, hs=history.state||{};
+  if(open && !hs.sheet) history.pushState({v:navSnap(),sheet:true},"");
+  else if(!open && hs.sheet){ navSkip=true; history.back(); }
+}).observe($("#ov"),{attributes:true,attributeFilter:["hidden"]});
+addEventListener("popstate", e=>{
+  if(navSkip){ navSkip=false; return; }
+  const st=e.state; if(!state.db) return;
+  navRestoring=true;
+  try{
+    if(!$("#ov").hidden && !(st&&st.sheet)){ state.confirmDel=null; closeSheet(); }
+    if(st&&st.v){
+      const prevW=state.rweek, prevTab=state.tab;
+      for(const [k,val] of Object.entries(st.v)) if(val!=null) state[k]=val;
+      if(state.rweek!==prevW) syncWeekSubs();
+      state.open=null; doRender(); if(state.tab!==prevTab) window.scrollTo({top:0});
+    }
+  } finally { setTimeout(()=>{ navRestoring=false; },0); }
+});
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
 document.addEventListener("change", e=>{
   const t=e.target;
