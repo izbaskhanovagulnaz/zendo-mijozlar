@@ -527,6 +527,22 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .pbtn:hover{background:var(--accent);color:var(--on-accent)}
 .pedit{padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--accent-t)}
 .gl2 .r .linkbtn{flex:none}
+/* client card v2: sizes itself to the card, not the window */
+.mdet,.sheet.tall{container-type:inline-size}
+.prof{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:16px 18px;padding:22px 0 18px}
+.prof .pn{min-width:0}
+.prof h3{font-size:clamp(22px,4.2cqi,30px);line-height:1.15;margin:0 0 8px;overflow-wrap:anywhere;padding-right:40px}
+.prof p{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.prof p a{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.prof .acts{grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fit,minmax(76px,1fr));gap:8px;flex:none}
+.prof .act{width:auto;max-width:none;padding:10px 0 8px}
+.kv{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kvb b{font-size:clamp(17px,2.6cqi,21px)}
+.kvb .neg{font:inherit;color:var(--red-x);font-style:normal}
+.sub2{grid-template-columns:1fr;gap:4px}
+@container (min-width:720px){ .sub2{grid-template-columns:1fr 1fr;gap:24px} }
+.rs0{gap:12px} .rs0 .cap{white-space:nowrap} .rs0 .linkbtn{white-space:nowrap}
+@container (max-width:520px){ .prof .acts{grid-template-columns:repeat(5,1fr)} .prof .act{font-size:11px} .rs0{flex-wrap:wrap} }
 </style>
 </head>
 <body class="auth">
@@ -874,8 +890,8 @@ function clientHTML(id, inSheet){
       ${kv("Keyingi to'lov", b.paidUntil?esc(dLabel(b.paidUntil)):"—", left==null?"":left<0?"muddati o'tgan":left+" kun qoldi")}
       ${kv("Oylik summa", b.monthly?esc(money(b.monthly,b.currency)):"—", b.agreed?"Kelishuv: "+esc(b.agreed):"")}
       ${kv("Userlar", c.users?esc(c.users):"—", esc(c.usersNote||""), "focususers")}
-      ${kv("Qarz", b.outstanding?`<span style="color:var(--red-x);display:inline">${esc(money(b.outstanding,b.currency))}</span>`:"Yo'q", "")}
-      ${kv("Oxirgi to'lov", b.lastPaidAmount?esc(money(b.lastPaidAmount,"UZS")):"—", b.lastPaidAt?esc(dLabel(b.lastPaidAt)):"")}
+      ${kv("Qarz", b.outstanding?`<em class="neg">${esc(money(b.outstanding,b.currency))}</em>`:"Yo'q", b.outstanding?"to'lanmagan":"")}
+      ${(()=>{ const lp=paysOf(id)[0], la=lp?lp.amount:(b.lastPaidAt?b.lastPaidAmount:null), ld=lp?lp.paidAt:b.lastPaidAt; return kv("Oxirgi to'lov", la?esc(money(la,"UZS")):"—", ld?esc(dLabel(ld)):""); })()}
       ${kv("Tarif", b.periodMonths?esc(b.periodMonths+" oylik"):(b.agreed?esc(b.agreed):"—"), b.syncedAt?esc(dLabel(b.syncedAt))+" holatiga":"")}
     </div>
     <div class="sub2">
