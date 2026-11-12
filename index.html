@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Zendo Mijozlar">
+<meta name="theme-color" content="#0d7a6f">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Zendo Mijozlar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: phone-first single column, sticky header, bottom tab bar; client card opens as a full sheet. */
+:root{
+  --bg:#eef2f0; --surface:#ffffff; --ink:#15201c; --muted:#5d6b66; --line:#d9e1dd; --accent:#0d7a6f; --accent-ink:#ffffff; --accent-soft:#d6efeb;
+  --ok:#1f8a4c; --ok-soft:#dcf3e4; --warn:#b26a00; --warn-soft:#fbeccf; --bad:#b4372f; --bad-soft:#f8dedb; --info:#2f5fb3; --info-soft:#dde7fa; --vio:#6b46c1; --vio-soft:#ebe3fb; --idle-soft:#e9edeb;
+  --font:"Onest", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1311; --surface:#161e1b; --ink:#e4ece9; --muted:#97a6a0; --line:#27322e; --accent:#33c3b2; --accent-ink:#06201c; --accent-soft:#163a35;
+    --ok:#5fd08e; --ok-soft:#173726; --warn:#f0b24a; --warn-soft:#3a2c12; --bad:#f08279; --bad-soft:#3d1d1a; --info:#86aaf0; --info-soft:#1b2a45; --vio:#b89cf2; --vio-soft:#2c2342; --idle-soft:#212b27;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1311; --surface:#161e1b; --ink:#e4ece9; --muted:#97a6a0; --line:#27322e; --accent:#33c3b2; --accent-ink:#06201c; --accent-soft:#163a35;
+  --ok:#5fd08e; --ok-soft:#173726; --warn:#f0b24a; --warn-soft:#3a2c12; --bad:#f08279; --bad-soft:#3d1d1a; --info:#86aaf0; --info-soft:#1b2a45; --vio:#b89cf2; --vio-soft:#2c2342; --idle-soft:#212b27;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,textarea,select{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px calc(150px + env(safe-area-inset-bottom))}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(12px + env(safe-area-inset-top)) 0 10px;border-bottom:1px solid var(--line)}
+.title-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:20px;font-weight:700;margin:0;letter-spacing:-.01em}
+.week{color:var(--muted);font-size:13px}
+.seg{display:flex;gap:4px;background:var(--idle-soft);border-radius:10px;padding:3px;margin-top:10px}
+.seg button{flex:1;border:0;background:transparent;padding:7px 8px;border-radius:8px;font-weight:600;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center}
+.chip small{font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip[aria-pressed="true"] small{color:var(--accent-ink);opacity:.85}
+.chip.today::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--warn)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--surface);border-top:1px solid var(--line);display:flex;justify-content:center;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs .in{display:flex;gap:4px;width:100%;max-width:820px}
+nav.tabs button{flex:1;border:0;background:transparent;border-radius:10px;padding:8px 4px;font-size:13px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs button svg{width:22px;height:22px}
+nav.tabs button[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
+nav.tabs .badge{font-size:10px;background:var(--bad);color:#fff;border-radius:999px;padding:0 5px;margin-left:2px}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 6px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.tile b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--muted)}
+.bar{height:6px;border-radius:6px;background:var(--idle-soft);overflow:hidden;display:flex;margin:6px 0 14px}
+.bar i{display:block;height:100%}
+.tools{display:flex;gap:8px;margin:12px 0 8px}
+.tools input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.fbtn{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:13px}
+.fbtn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.sect{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px;display:flex;justify-content:space-between;gap:8px}
+.list{display:flex;flex-direction:column;gap:8px}
+.call{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:12px;overflow:hidden}
+.call.s-gap,.call.s-tolov{border-left-color:var(--ok)}
+.call.s-muammo{border-left-color:var(--bad)}
+.call.s-zoom{border-left-color:var(--vio)}
+.call.s-kot{border-left-color:var(--warn)}
+.call.s-rad{border-left-color:var(--muted);opacity:.75}
+.call.s-kut{border-left-color:var(--accent)}
+.call-head{display:flex;gap:10px;align-items:flex-start;width:100%;border:0;background:transparent;text-align:left;padding:11px 12px}
+.num{flex:0 0 26px;height:26px;border-radius:8px;background:var(--idle-soft);color:var(--muted);font-size:12px;font-weight:700;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+.call-main{flex:1;min-width:0}
+.name{font-weight:650;font-size:15.5px;overflow-wrap:anywhere}
+.task{display:block;color:var(--muted);font-size:13.5px;margin-top:2px}
+.meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.pill{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--idle-soft);color:var(--muted);white-space:nowrap}
+.g-support{background:var(--bad-soft);color:var(--bad)}
+.g-yangi{background:var(--info-soft);color:var(--info)}
+.g-faol{background:var(--ok-soft);color:var(--ok)}
+.g-ketgan{background:var(--idle-soft);color:var(--muted)}
+.g-lid{background:var(--accent-soft);color:var(--accent)}
+.g-vazifa,.g-qayta{background:var(--warn-soft);color:var(--warn)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-warn{background:var(--warn-soft);color:var(--warn)}
+.p-bad{background:var(--bad-soft);color:var(--bad)}
+.st{font-size:12px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap;align-self:flex-start}
+.st-kut{background:var(--idle-soft);color:var(--muted)}
+.st-gap,.st-tolov{background:var(--ok-soft);color:var(--ok)}
+.st-muammo{background:var(--bad-soft);color:var(--bad)}
+.st-zoom{background:var(--vio-soft);color:var(--vio)}
+.st-kot{background:var(--warn-soft);color:var(--warn)}
+.st-rad{background:var(--idle-soft);color:var(--muted);text-decoration:line-through}
+.body{padding:0 12px 12px 48px;display:flex;flex-direction:column;gap:10px}
+.info{font-size:13px;color:var(--muted);background:var(--idle-soft);border-radius:8px;padding:7px 9px}
+.stbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stbtns button{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:9px 6px;font-size:13px;font-weight:600}
+.stbtns button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.row{display:flex;gap:8px;align-items:center}
+.row input{flex:1;min-width:0}
+input.f,textarea.f,select.f{width:100%;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:9px 11px}
+textarea.f{min-height:70px;resize:vertical}
+.callbtn{border:0;background:var(--accent);color:var(--accent-ink);border-radius:9px;padding:9px 14px;font-weight:700;text-decoration:none;white-space:nowrap}
+.callbtn[aria-disabled="true"]{opacity:.4;pointer-events:none}
+label.lbl{font-size:12px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.link{font-size:13px;color:var(--accent);overflow-wrap:anywhere}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.ghost{border:1px solid var(--line);background:transparent;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600}
+.primary{border:0;background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:11px 16px;font-weight:700}
+.danger{border:1px solid var(--bad);color:var(--bad);background:transparent;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600}
+.danger.confirm{background:var(--bad);color:#fff}
+.linkbtn{border:0;background:transparent;color:var(--accent);font-weight:600;font-size:13px;padding:0}
+.saved{font-size:12px;color:var(--muted);min-height:16px}
+.block{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.block input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent);flex:0 0 auto}
+.block .time{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;white-space:nowrap;min-width:92px}
+.block .who{font-size:12px;font-weight:600;color:var(--accent)}
+.block.done .txt{text-decoration:line-through;color:var(--muted)}
+.notice{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:14px;margin:12px 0}
+.empty{color:var(--muted);text-align:center;padding:24px 12px}
+.rules{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14px;margin:0}
+.rules li{margin:4px 0}
+/* events */
+.ev{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.ev .chk{width:26px;height:26px;border-radius:50%;border:2px solid var(--accent);background:transparent;flex:0 0 auto;display:grid;place-items:center;color:var(--accent-ink);font-weight:700;font-size:14px}
+.ev.done .chk{background:var(--accent)}
+.ev.done .ev-title{text-decoration:line-through;color:var(--muted)}
+.ev .time{font-variant-numeric:tabular-nums;font-weight:700;min-width:46px}
+.ev-main{flex:1;min-width:0}
+.ev-title{font-weight:600;overflow-wrap:anywhere}
+.ev-sub{font-size:13px;color:var(--muted)}
+.ev.late{border-color:var(--bad)}
+/* clients */
+.crow{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.crow .cm{flex:1;min-width:0}
+.crow .right{text-align:right;font-size:12.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.crow .right b{display:block;color:var(--ink);font-size:14px}
+/* overlays */
+.fab{position:fixed;right:max(16px, env(safe-area-inset-right));bottom:calc(80px + env(safe-area-inset-bottom));z-index:8;border:0;background:var(--accent);color:var(--accent-ink);border-radius:999px;padding:13px 20px;font-weight:700;font-size:15px;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.overlay{position:fixed;inset:0;z-index:20;background:rgba(10,20,17,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);color:var(--ink);width:100%;max-width:620px;max-height:94%;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.sheet.tall{height:94%}
+@media (min-width:700px){.overlay{align-items:center}.sheet{border-radius:18px}}
+.sheet h2{margin:0;font-size:19px;overflow-wrap:anywhere}
+.sheet-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.x{border:0;background:var(--idle-soft);border-radius:999px;width:34px;height:34px;font-size:18px;flex:0 0 auto}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kv .tile b{font-size:16px}
+.err{color:var(--bad);font-size:13px;min-height:16px}
+.req{color:var(--bad)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:13px}
+.tag[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.tl{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:6px}
+.tl-item{position:relative;padding:0 0 14px 16px}
+.tl-item::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--accent)}
+.tl-date{font-size:12px;color:var(--muted);font-weight:600}
+.tl-text{white-space:pre-wrap;overflow-wrap:anywhere}
+.picker{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:9px;margin-top:6px}
+.picker button{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);background:transparent;padding:8px 10px;font-size:14px}
+.picked{display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--accent-soft);border-radius:9px;padding:8px 10px;font-weight:600}
+@media (max-width:420px){.summary{grid-template-columns:repeat(2,1fr)}.body{padding-left:12px}.block .time{min-width:78px}.kv{grid-template-columns:repeat(2,1fr)}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="title-row">
+      <h1 id="title">Bugun</h1>
+      <span class="week" id="subLabel"></span>
+    </div>
+    <div id="headExtra"></div>
+  </header>
+  <div id="notice"></div>
+  <main id="main"><p class="empty">Yuklanmoqda…</p></main>
+</div>
+
+<button class="fab" id="fab" type="button" hidden>+</button>
+
+<nav class="tabs" aria-label="Bo'limlar"><div class="in">
+  <button data-tab="bugun" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Bugun</button>
+  <button data-tab="kalendar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Kalendar</button>
+  <button data-tab="mijozlar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.9.8 3.1 2.5 3.5 5.2"/></svg>Mijozlar</button>
+  <button data-tab="reja" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Reja</button>
+</div></nav>
+
+<div class="overlay" id="ov" hidden><div class="sheet" id="sheet"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+/* ---------- constants ---------- */
+const STATUSES = [
+  {k:"kut", l:"Kutilmoqda"}, {k:"gap", l:"Gaplashildi"}, {k:"muammo", l:"Muammo bor"},
+  {k:"zoom", l:"Zoom/demo"}, {k:"tolov", l:"To'lov/yillik"}, {k:"kot", l:"Ko'tarmadi"}, {k:"rad", l:"Rad etdi"}
+];
+const ST_LABEL = Object.fromEntries(STATUSES.map(s=>[s.k,s.l]));
+const GROUPS = {support:"Shoshilinch support", yangi:"Yangi ro'yxatdan o'tgan", faol:"Faol mijoz", ketgan:"Ketgan mijoz", qayta:"Qayta urinish", lid:"Sotuv lidi", vazifa:"Vazifa"};
+const CST = {faol:"Faol mijoz", yangi:"Yangi ro'yxatdan o'tgan", lid:"Sotuv lidi", ketgan:"Ketgan mijoz"};
+const DONE = new Set(["gap","muammo","zoom","tolov","rad"]);
+const EV_TYPES = {zoom:"Zoom", call:"Qo'ng'iroq", meet:"Uchrashuv", task:"Vazifa"};
+const H_TYPES = {call:"Qo'ng'iroq", zoom:"Zoom", meet:"Uchrashuv", tg:"Telegram", note:"Izoh", pay:"To'lov"};
+const TOPICS = ["SMS","Xodimlar","Kassa","To'lov","Hisobot","Ombor","Laboratoriya","Bemorlar","Muammo yo'q"];
+const MONTHS = ["yan","fev","mar","apr","may","iyun","iyul","avg","sen","okt","noy","dek"];
+const WD = ["Yak","Dush","Sesh","Chor","Pay","Jum","Shan"];
+
+/* ---------- state ---------- */
+const state = {
+  db:null, plan:null, calls:new Map(), clients:new Map(), events:new Map(),
+  tab:"bugun", rejaView:"kun", day:null, q:"", st:"all", open:null, confirmDel:null,
+  cq:"", cf:"all", calDay:null, sheet:null, hist:[], histUnsub:null, histFor:null,
+  pendingRender:false, loaded:{plan:false,clients:false,events:false}
+};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = n => String(n).padStart(2,"0");
+const dstr = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const todayStr = () => dstr(new Date());
+const parseD = s => { const [y,m,d]=String(s).slice(0,10).split("-").map(Number); return new Date(y,(m||1)-1,d||1); };
+const addDays = (s,n) => { const d=parseD(s); d.setDate(d.getDate()+n); return dstr(d); };
+const daysBetween = (a,b) => Math.round((parseD(b)-parseD(a))/86400000);
+const dLabel = s => { if(!s) return ""; const d=parseD(s); return `${d.getDate()}-${MONTHS[d.getMonth()]}`; };
+const dLong = s => { const d=parseD(s); return `${WD[d.getDay()]}, ${d.getDate()}-${MONTHS[d.getMonth()]}`; };
+const nowTime = () => { const d=new Date(); return pad(d.getHours())+":"+pad(d.getMinutes()); };
+const money = (n,cur) => { if(n==null||n==="") return "—"; const v=Number(n); if(cur==="USD") return "$"+v.toLocaleString("en-US"); return Math.round(v).toLocaleString("ru-RU").replace(/,/g," ")+" so'm"; };
+const uid = p => p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function setNotice(msg){ $("#notice").innerHTML = msg ? `<div class="notice">${esc(msg)}</div>` : ""; }
+function failMsg(e){ return e && (e.code==="invalid_argument"||e.code==="42501") ? "Saqlab bo'lmadi: bu sahifada yozish huquqingiz yo'q." : "Saqlab bo'lmadi, internetni tekshirib qayta urinib ko'ring."; }
+
+/* ---------- derived ---------- */
+function payInfo(c){
+  const b=c.billing||{};
+  const out={label:null, cls:""};
+  if(b.outstanding>0){ out.label="Qarz "+money(b.outstanding,b.currency); out.cls="p-bad"; return out; }
+  if(b.trial){ out.label="Hali to'lamagan"; out.cls="p-warn"; return out; }
+  if(b.noSubscription){ out.label="Obuna yo'q"; out.cls="p-warn"; return out; }
+  if(b.paidUntil){
+    const left=daysBetween(todayStr(), b.paidUntil);
+    if(left<0){ out.label="Muddati o'tgan"; out.cls="p-bad"; }
+    else if(left<=7){ out.label=`To'lov ${left} kunda`; out.cls="p-warn"; }
+    else { out.label=dLabel(b.paidUntil)+" gacha"; out.cls="p-ok"; }
+  }
+  return out;
+}
+function lastContact(c){ return c.lastContactAt || null; }
+function clientForCall(call){
+  if(call.clientId && state.clients.has(call.clientId)) return state.clients.get(call.clientId);
+  if(call.site){ for(const c of state.clients.values()) if(c.domain===call.site) return c; }
+  const n=(call.name||"").toLowerCase().replace(/\s*\(.*\)\s*/g,"").trim();
+  for(const c of state.clients.values()){ const cn=(c.name||"").toLowerCase().replace(/\s*\(.*\)\s*/g,"").trim(); if(cn && cn===n) return c; }
+  return null;
+}
+function eventsOn(day){ return [...state.events.values()].filter(e=>e.date===day).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99")); }
+function callsFor(day){ return [...state.calls.values()].filter(c=>!day||c.day===day).sort((a,b)=>(a.day||"").localeCompare(b.day||"")||(a.ord||0)-(b.ord||0)); }
+function counts(list){ const r={total:list.length,done:0,kot:0,kut:0,muammo:0,tolov:0,zoom:0}; for(const c of list){const s=c.st||"kut"; if(DONE.has(s)) r.done++; if(s in r) r[s]++;} return r; }
+
+/* ---------- render: shared pieces ---------- */
+function evRow(e){
+  const late = !e.done && (e.date<todayStr() || (e.date===todayStr() && e.time && e.time<nowTime()));
+  const cl = e.clientId ? state.clients.get(e.clientId) : null;
+  return `<div class="ev${e.done?" done":""}${late?" late":""}">
+    <button class="chk" data-act="evdone" data-id="${esc(e.id)}" aria-label="${e.done?"Bajarilmagan deb belgilash":"Bajarildi"}">${e.done?"✓":""}</button>
+    <span class="time">${esc(e.time||"—")}</span>
+    <div class="ev-main">
+      <div class="ev-title">${esc(e.title||EV_TYPES[e.type]||"")}</div>
+      <div class="ev-sub">${esc(EV_TYPES[e.type]||"")}${cl?` · <button class="linkbtn" data-act="client" data-id="${esc(cl.id)}">${esc(cl.name)}</button>`:""}${e.result?` · ${esc(e.result)}`:""}</div>
+    </div>
+    <button class="linkbtn" data-act="evedit" data-id="${esc(e.id)}">Tahrir</button>
+  </div>`;
+}
+function clientRow(c){
+  const p=payInfo(c), b=c.billing||{};
+  return `<button class="crow" data-act="client" data-id="${esc(c.id)}">
+    <span class="cm"><span class="name">${esc(c.name)}</span>
+      <span class="meta"><span class="pill g-${esc(c.st)}">${esc(CST[c.st]||c.st||"")}</span>${p.label?`<span class="pill ${p.cls}">${esc(p.label)}</span>`:""}${c.users?`<span class="pill">${esc(c.users)} user</span>`:""}</span>
+    </span>
+    <span class="right">${b.monthly?`<b>${esc(money(b.monthly,b.currency))}</b>oyiga`:""}${lastContact(c)?`<div>Oxirgi: ${esc(dLabel(lastContact(c)))}</div>`:""}</span>
+  </button>`;
+}
+
+/* ---------- render: Bugun ---------- */
+function renderBugun(){
+  const t=todayStr();
+  const evs=eventsOn(t);
+  const overdue=[...state.events.values()].filter(e=>!e.done && e.date<t).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const calls=callsFor(t); const cc=counts(calls);
+  const payDue=[...state.clients.values()].filter(c=>{ const b=c.billing||{}; if(b.outstanding>0) return true; if(!b.paidUntil) return false; const l=daysBetween(t,b.paidUntil); return l<=7; }).sort((a,b)=>((a.billing||{}).paidUntil||"").localeCompare((b.billing||{}).paidUntil||""));
+  let h="";
+  h+=`<div class="summary">
+    <div class="tile"><b>${evs.filter(e=>e.done).length}/${evs.length}</b><span>bugungi uchrashuv</span></div>
+    <div class="tile"><b>${cc.done}/${cc.total}</b><span>qo'ng'iroq</span></div>
+    <div class="tile"><b>${overdue.length}</b><span>kechikkan</span></div>
+    <div class="tile"><b>${payDue.length}</b><span>to'lov yaqin / qarz</span></div>
+  </div>`;
+  if(overdue.length){ h+=`<div class="sect">Kechikkanlar</div><div class="list">${overdue.map(evRow).join("")}</div>`; }
+  h+=`<div class="sect"><span>Bugungi kalendar</span><button class="linkbtn" data-act="newev">+ Qo'shish</button></div>`;
+  h+= evs.length ? `<div class="list">${evs.map(evRow).join("")}</div>` : `<p class="empty">Bugunga uchrashuv yo'q.</p>`;
+  if(calls.length){
+    const next=calls.filter(c=>(c.st||"kut")==="kut").slice(0,5);
+    h+=`<div class="sect"><span>Qo'ng'iroqlar rejasi</span><button class="linkbtn" data-act="goreja">Hammasi (${cc.total}) →</button></div>`;
+    h+= next.length ? `<div class="list">${next.map((c,i)=>callCard(c, calls.indexOf(c)+1)).join("")}</div>` : `<p class="empty">Bugungi qo'ng'iroqlar tugadi.</p>`;
+  }
+  if(payDue.length){ h+=`<div class="sect">To'lov yaqin yoki qarz</div><div class="list">${payDue.slice(0,12).map(clientRow).join("")}</div>`; }
+  return h;
+}
+
+/* ---------- render: Kalendar ---------- */
+function renderKalendar(){
+  const t=todayStr(); if(!state.calDay) state.calDay=t;
+  const start=addDays(state.calDay, -((parseD(state.calDay).getDay()+6)%7));
+  const days=[...Array(7)].map((_,i)=>addDays(start,i));
+  let h=`<div class="chips">
+    <button class="chip" data-act="calshift" data-n="-7">‹</button>
+    ${days.map(d=>{ const n=eventsOn(d).filter(e=>!e.done).length; return `<button class="chip${d===t?" today":""}" data-act="calday" data-day="${d}" aria-pressed="${d===state.calDay}">${esc(dLong(d))}${n?`<small>${n}</small>`:""}</button>`; }).join("")}
+    <button class="chip" data-act="calshift" data-n="7">›</button>
+  </div>`;
+  const evs=eventsOn(state.calDay);
+  h+=`<div class="sect"><span>${esc(dLong(state.calDay))}</span><button class="linkbtn" data-act="newev">+ Qo'shish</button></div>`;
+  h+= evs.length ? `<div class="list">${evs.map(evRow).join("")}</div>` : `<p class="empty">Bu kunga hech narsa yo'q. Pastdagi «+» bilan Zoom yoki qo'ng'iroq qo'shing.</p>`;
+  const upcoming=[...state.events.values()].filter(e=>!e.done && e.date>state.calDay).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""))).slice(0,15);
+  if(upcoming.length){
+    h+=`<div class="sect">Keyingi uchrashuvlar</div><div class="list">`;
+    let cur=null;
+    for(const e of upcoming){ if(e.date!==cur){ cur=e.date; h+=`<div class="tl-date">${esc(dLong(e.date))}</div>`; } h+=evRow(e); }
+    h+=`</div>`;
+  }
+  return h;
+}
+
+/* ---------- render: Mijozlar ---------- */
+function renderMijozlar(){
+  const t=todayStr();
+  let list=[...state.clients.values()];
+  const f=state.cf;
+  if(f==="qarz") list=list.filter(c=>{const b=c.billing||{}; return b.outstanding>0 || (b.paidUntil && daysBetween(t,b.paidUntil)<=7);});
+  else if(f!=="all") list=list.filter(c=>c.st===f);
+  const q=state.cq.trim().toLowerCase();
+  if(q) list=list.filter(c=>[c.name,c.phone,c.contact,c.domain].some(v=>String(v||"").toLowerCase().includes(q)));
+  list.sort((a,b)=> (b.lastContactAt||"").localeCompare(a.lastContactAt||"") || (a.name||"").localeCompare(b.name||""));
+  const cnt=k=>[...state.clients.values()].filter(c=>c.st===k).length;
+  let h=`<div class="tools"><input id="csearch" type="search" placeholder="Klinika, telefon yoki ism bo'yicha qidirish" value="${esc(state.cq)}"></div>
+  <div class="filters" role="group" aria-label="Filtr">
+    ${[["all","Hammasi ("+state.clients.size+")"],["faol","Faol ("+cnt("faol")+")"],["yangi","Yangi ("+cnt("yangi")+")"],["lid","Lid ("+cnt("lid")+")"],["ketgan","Ketgan ("+cnt("ketgan")+")"],["qarz","To'lov yaqin / qarz"]].map(([k,l])=>`<button class="fbtn" data-act="cfilter" data-f="${k}" aria-pressed="${state.cf===k}">${esc(l)}</button>`).join("")}
+  </div>`;
+  h+= list.length ? `<div class="list">${list.map(clientRow).join("")}</div>` : `<p class="empty">Hech narsa topilmadi.</p>`;
+  h+=`<p class="empty"><button class="linkbtn" data-act="logout">Hisobdan chiqish</button></p>`;
+  return h;
+}
+
+/* ---------- render: Reja (weekly call plan) ---------- */
+function callCard(c, n){
+  const s=c.st||"kut", open=state.open===c.id, phone=(c.phone||"").trim(), tel=phone.replace(/[^\d+]/g,"");
+  const cl=clientForCall(c);
+  const body=!open?"":`
+    <div class="body">
+      ${c.info?`<div class="info">${esc(c.info)}</div>`:""}
+      <div class="stbtns" role="group" aria-label="Natija">${STATUSES.map(x=>`<button data-act="st" data-id="${esc(c.id)}" data-st="${x.k}" aria-pressed="${x.k===s}">${esc(x.l)}</button>`).join("")}</div>
+      <div><label class="lbl" for="ph-${esc(c.id)}">Telefon</label>
+        <div class="row"><input class="f" id="ph-${esc(c.id)}" data-field="phone" data-id="${esc(c.id)}" inputmode="tel" placeholder="+998 __ ___ __ __" value="${esc(phone)}"><a class="callbtn" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">Qo'ng'iroq</a></div></div>
+      <div><label class="lbl" for="nt-${esc(c.id)}">Izoh (mijoz tarixiga ham yoziladi)</label>
+        <textarea class="f" id="nt-${esc(c.id)}" data-field="note" data-id="${esc(c.id)}" placeholder="Nima gaplashildi, keyingi qadam…">${esc(c.note||"")}</textarea></div>
+      <div class="actions">
+        ${cl?`<button class="ghost" data-act="client" data-id="${esc(cl.id)}">Mijoz kartasi</button>`:""}
+        <button class="ghost" data-act="callzoom" data-id="${esc(c.id)}">Zoom belgilash</button>
+        <button class="ghost" data-act="next" data-id="${esc(c.id)}">Keyingi kunga</button>
+        <button class="danger${state.confirmDel===c.id?" confirm":""}" data-act="del" data-id="${esc(c.id)}">${state.confirmDel===c.id?"Ha, o'chirilsin":"O'chirish"}</button>
+      </div>
+      <div class="saved" id="sv-${esc(c.id)}"></div>
+    </div>`;
+  return `<article class="call s-${s}" id="card-${esc(c.id)}">
+    <button class="call-head" data-act="toggle" data-id="${esc(c.id)}" aria-expanded="${open}">
+      <span class="num">${esc(n??"")}</span>
+      <span class="call-main"><span class="name">${esc(c.name)}</span>${c.task?`<span class="task">${esc(c.task)}</span>`:""}
+        <span class="meta"><span class="pill g-${esc(c.grp)}">${esc(GROUPS[c.grp]||c.grp||"")}</span>${c.pri?`<span class="pill">${esc(c.pri)}</span>`:""}${phone?`<span class="pill">${esc(phone)}</span>`:""}</span></span>
+      <span class="st st-${s}">${esc(ST_LABEL[s]||s)}</span>
+    </button>${body}</article>`;
+}
+function summaryHTML(list){
+  const c=counts(list); const pct=n=>c.total?(n/c.total*100).toFixed(1)+"%":"0"; const other=c.done-c.tolov-c.zoom-c.muammo;
+  return `<div class="summary"><div class="tile"><b>${c.done}/${c.total}</b><span>gaplashildi</span></div><div class="tile"><b>${c.kut}</b><span>kutilmoqda</span></div><div class="tile"><b>${c.kot}</b><span>ko'tarmadi</span></div><div class="tile"><b>${c.tolov+c.zoom}</b><span>to'lov / demo</span></div></div>
+  <div class="bar" aria-hidden="true"><i style="width:${pct(c.tolov+c.zoom)};background:var(--vio)"></i><i style="width:${pct(Math.max(other,0))};background:var(--ok)"></i><i style="width:${pct(c.muammo)};background:var(--bad)"></i><i style="width:${pct(c.kot)};background:var(--warn)"></i></div>`;
+}
+function renderReja(){
+  if(!state.plan) return `<p class="empty">Haftalik reja hali yozilmagan. Claude'dan «keyingi hafta rejasini tuz» deb so'rang.</p>`;
+  const v=state.rejaView;
+  if(v==="kun"){
+    const list=callsFor(state.day);
+    if(!list.length) return `<p class="empty">Bu kunga qo'ng'iroq yo'q.</p>`;
+    return summaryHTML(list)+`<div class="list">${list.map((c,i)=>callCard(c,i+1)).join("")}</div>`;
+  }
+  if(v==="jadval"){
+    const blocks=(state.plan.blocks||[]).map((b,i)=>({...b,i})).filter(b=>b.day===state.day);
+    let h="";
+    if(state.plan.rules&&state.plan.rules.length) h+=`<div class="sect">Qoidalar</div><ul class="rules">${state.plan.rules.map(r=>`<li>${esc(r)}</li>`).join("")}</ul>`;
+    h+=`<div class="sect">Kun jadvali</div>`;
+    if(!blocks.length) return h+`<p class="empty">Bu kunga blok yo'q.</p>`;
+    return h+`<div class="list">`+blocks.map(b=>`<label class="block${b.done?" done":""}" for="bk-${b.i}"><input type="checkbox" id="bk-${b.i}" data-act="block" data-i="${b.i}" ${b.done?"checked":""}><span class="time">${esc(b.time)}</span><span><span class="who">${esc(b.title)}</span><div class="txt">${esc(b.text)}</div></span></label>`).join("")+`</div>`;
+  }
+  const q=state.q.trim().toLowerCase();
+  let list=callsFor(null);
+  if(state.st!=="all") list=list.filter(c=>(c.st||"kut")===state.st);
+  if(q) list=list.filter(c=>[c.name,c.phone,c.note,c.task,c.info,c.site].some(x=>String(x||"").toLowerCase().includes(q)));
+  let h=`<div class="tools"><input id="search" type="search" placeholder="Klinika, telefon yoki izoh bo'yicha qidirish" value="${esc(state.q)}"></div>
+    <div class="filters" role="group" aria-label="Natija bo'yicha"><button class="fbtn" data-act="filter" data-st="all" aria-pressed="${state.st==="all"}">Hammasi</button>${STATUSES.map(s=>`<button class="fbtn" data-act="filter" data-st="${s.k}" aria-pressed="${state.st===s.k}">${esc(s.l)}</button>`).join("")}</div>`;
+  h+=summaryHTML(callsFor(null));
+  if(!list.length) return h+`<p class="empty">Hech narsa topilmadi.</p>`;
+  const labels=Object.fromEntries((state.plan.days||[]).map(d=>[d.id,d.label]));
+  let cur=null,n=0;
+  for(const c of list){ if(c.day!==cur){ if(cur!==null) h+=`</div>`; cur=c.day; n=0; h+=`<div class="sect">${esc(labels[c.day]||c.day)}</div><div class="list">`; } h+=callCard(c,++n); }
+  return h+`</div>`;
+}
+function rejaHead(){
+  let h=`<div class="seg" role="group" aria-label="Ko'rinish">${[["kun","Ro'yxat"],["jadval","Jadval"],["hammasi","Butun hafta"]].map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${state.rejaView===k}">${l}</button>`).join("")}</div>`;
+  if(state.plan && state.rejaView!=="hammasi"){
+    const t=todayStr();
+    h+=`<div class="chips">${(state.plan.days||[]).map(d=>{ const c=counts(callsFor(d.id)); return `<button class="chip${d.id===t?" today":""}" data-act="rday" data-day="${esc(d.id)}" aria-pressed="${d.id===state.day}">${esc(d.label)}${state.rejaView==="kun"?`<small>${c.done}/${c.total}</small>`:""}</button>`; }).join("")}</div>`;
+  }
+  return h;
+}
+
+/* ---------- render: client sheet ---------- */
+function renderClientSheet(id){
+  const c=state.clients.get(id); if(!c){ closeSheet(); return; }
+  const b=c.billing||{}, p=payInfo(c), tel=(c.phone||"").replace(/[^\d+]/g,"");
+  const upcoming=[...state.events.values()].filter(e=>e.clientId===id && !e.done).sort((a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||"")));
+  const hist=state.histFor===id ? state.hist : [];
+  $("#sheet").className="sheet tall";
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><div><h2>${esc(c.name)}</h2>
+      <div class="meta"><span class="pill g-${esc(c.st)}">${esc(CST[c.st]||c.st||"")}</span>${p.label?`<span class="pill ${p.cls}">${esc(p.label)}</span>`:""}</div></div>
+      <button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <div class="kv">
+      <div class="tile"><span>Keyingi to'lov</span><b>${b.paidUntil?esc(dLabel(b.paidUntil)):"—"}</b></div>
+      <div class="tile"><span>Oylik summa</span><b>${b.monthly?esc(money(b.monthly,b.currency)):"—"}</b></div>
+      <div class="tile"><span>Userlar</span><b>${c.users?esc(c.users):"—"}</b></div>
+      <div class="tile"><span>Qarz</span><b>${b.outstanding?esc(money(b.outstanding,b.currency)):"0"}</b></div>
+      <div class="tile"><span>Oxirgi to'lov</span><b>${b.lastPaidAt?esc(dLabel(b.lastPaidAt)):"—"}</b>${b.lastPaidAmount?`<span>${esc(money(b.lastPaidAmount,"UZS"))}</span>`:""}</div>
+      <div class="tile"><span>Tarif</span><b>${b.agreed?esc(b.agreed):(b.periodMonths?esc(b.periodMonths+" oylik"):"—")}</b></div>
+    </div>
+    <div class="info">${b.syncedAt?`To'lov ma'lumoti ${esc(dLabel(b.syncedAt))} holatiga.`:"To'lov ma'lumoti hali kiritilmagan."}${c.usersNote?` ${esc(c.usersNote)}.`:""}</div>
+    <div class="two">
+      <div><label class="lbl" for="c-phone">Telefon</label><div class="row"><input class="f" id="c-phone" data-cfield="phone" inputmode="tel" value="${esc(c.phone||"")}" placeholder="+998"><a class="callbtn" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">☎</a></div></div>
+      <div><label class="lbl" for="c-contact">Mas'ul shaxs</label><input class="f" id="c-contact" data-cfield="contact" value="${esc(c.contact||"")}" placeholder="Ism"></div>
+    </div>
+    ${c.domain?`<a class="link" href="https://${esc(c.domain)}" target="_blank" rel="noopener">${esc(c.domain)}</a>`:""}
+    <div class="sect"><span>Rejadagi uchrashuvlar</span><button class="linkbtn" data-act="newev" data-client="${esc(id)}">+ Zoom / qo'ng'iroq belgilash</button></div>
+    ${upcoming.length?`<div class="list">${upcoming.map(e=>`<div class="ev"><span class="time">${esc(dLabel(e.date))} ${esc(e.time||"")}</span><div class="ev-main"><div class="ev-title">${esc(e.title||EV_TYPES[e.type])}</div><div class="ev-sub">${esc(EV_TYPES[e.type]||"")}</div></div><button class="linkbtn" data-act="evdone" data-id="${esc(e.id)}">Bajarildi</button></div>`).join("")}</div>`:`<p class="empty" style="padding:8px">Rejada uchrashuv yo'q.</p>`}
+    <div class="sect">Yangi yozuv</div>
+    <form id="histForm" class="list" novalidate>
+      <div class="two">
+        <div><label class="lbl" for="h-type">Turi</label><select class="f" id="h-type">${Object.entries(H_TYPES).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>
+        <div><label class="lbl" for="h-date">Sana</label><input class="f" id="h-date" type="date" value="${todayStr()}"></div>
+      </div>
+      <div class="tags" role="group" aria-label="Mavzu">${TOPICS.map(t=>`<button type="button" class="tag" data-act="tag" data-t="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>
+      <textarea class="f" id="h-text" placeholder="Masalan: SMS kelmayapti dedi, dasturchiga berdim"></textarea>
+      <div class="err" id="h-err"></div>
+      <div class="actions"><button class="primary" type="submit">Tarixga qo'shish</button></div>
+    </form>
+    <div class="sect">Suhbatlar tarixi (${hist.length})</div>
+    ${hist.length?`<div class="tl">${hist.map(x=>`<div class="tl-item"><div class="tl-date">${esc(dLong(x.date||x.at))} · ${esc(H_TYPES[x.type]||x.type||"")}</div>${(x.tags&&x.tags.length)?`<div class="meta">${x.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join("")}</div>`:""}<div class="tl-text">${esc(x.text||"")}</div></div>`).join("")}</div>`:`<p class="empty" style="padding:8px">Hali yozuv yo'q.</p>`}
+    <div class="sect">Boshqa</div>
+    <div class="two">
+      <div><label class="lbl" for="c-st">Holati</label><select class="f" id="c-st" data-cfield="st">${Object.entries(CST).map(([k,l])=>`<option value="${k}"${c.st===k?" selected":""}>${l}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="c-users">Userlar (qo'lda)</label><input class="f" id="c-users" data-cfield="users" inputmode="numeric" value="${esc(c.users||"")}"></div>
+    </div>
+    <div class="saved" id="c-saved"></div>`;
+}
+function subscribeHistory(id){
+  if(state.histUnsub){ state.histUnsub(); state.histUnsub=null; }
+  state.hist=[]; state.histFor=id;
+  state.histUnsub=state.db.collection("clients/"+id+"/history").onSnapshot(snap=>{
+    state.hist=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>((b.date||"")+(b.at||"")).localeCompare((a.date||"")+(a.at||"")));
+    if(state.sheet&&state.sheet.kind==="client"&&state.sheet.id===id) renderSheetSafe();
+  }, ()=>{});
+}
+function openClient(id){
+  state.sheet={kind:"client", id}; $("#ov").hidden=false; subscribeHistory(id); renderClientSheet(id); $("#sheet").scrollTop=0;
+}
+function closeSheet(){ $("#ov").hidden=true; state.sheet=null; if(state.histUnsub){ state.histUnsub(); state.histUnsub=null; } state.histFor=null; if(state.pendingRender) doRender(); }
+function renderSheetSafe(){
+  const a=document.activeElement;
+  if(a && $("#sheet").contains(a) && /INPUT|TEXTAREA|SELECT/.test(a.tagName)){ state.sheetPending=true; return; }
+  if(state.sheet && state.sheet.kind==="client") renderClientSheet(state.sheet.id);
+}
+
+/* ---------- forms: event ---------- */
+function clientPicker(selId){
+  const c=selId?state.clients.get(selId):null;
+  return c ? `<div class="picked"><span>${esc(c.name)}</span><button type="button" class="linkbtn" data-act="unpick">O'zgartirish</button></div><input type="hidden" id="e-client" value="${esc(c.id)}">`
+    : `<input class="f" id="e-csearch" placeholder="Klinika nomini yozing (ixtiyoriy)" autocomplete="off"><div class="picker" id="e-plist" hidden></div><input type="hidden" id="e-client" value="">`;
+}
+function openEventForm(opts){
+  const e = opts.id ? state.events.get(opts.id) : null;
+  state.sheet={kind:"event", id:e?e.id:null, back:opts.back||null};
+  $("#ov").hidden=false; $("#sheet").className="sheet";
+  const date = e?e.date:(opts.date||state.calDay||todayStr());
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><h2>${e?"Uchrashuvni tahrirlash":"Kalendarga qo'shish"}</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <form id="evForm" class="list" novalidate>
+      <div><label class="lbl" for="e-type">Turi</label><select class="f" id="e-type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${(e?e.type:(opts.type||"zoom"))===k?" selected":""}>${l}</option>`).join("")}</select></div>
+      <div><label class="lbl">Mijoz</label><div id="e-pickwrap">${clientPicker(e?e.clientId:(opts.clientId||null))}</div></div>
+      <div><label class="lbl" for="e-title">Nima haqida <span class="req">*</span></label><input class="f" id="e-title" value="${esc(e?e.title:(opts.title||""))}" placeholder="Masalan: Kassa bo'yicha o'qitish"></div>
+      <div class="two"><div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}"></div><div><label class="lbl" for="e-time">Vaqt</label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div></div>
+      <div><label class="lbl" for="e-note">Izoh</label><textarea class="f" id="e-note">${esc(e?e.note||"":"")}</textarea></div>
+      <div class="err" id="e-err"></div>
+      <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
+    </form>`;
+  setTimeout(()=>{ const f=$("#e-title"); if(f && !e) f.focus(); },50);
+}
+function openDoneForm(id){
+  const e=state.events.get(id); if(!e) return;
+  const cl=e.clientId?state.clients.get(e.clientId):null;
+  state.sheet={kind:"done", id, back:state.sheet&&state.sheet.kind==="client"?state.sheet.id:null};
+  $("#ov").hidden=false; $("#sheet").className="sheet";
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><div><h2>Bajarildi: ${esc(e.title||EV_TYPES[e.type])}</h2><div class="ev-sub">${esc(dLong(e.date))} ${esc(e.time||"")}${cl?` · ${esc(cl.name)}`:""}</div></div><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <form id="doneForm" class="list" novalidate>
+      <div class="tags" role="group" aria-label="Mavzu">${TOPICS.map(t=>`<button type="button" class="tag" data-act="tag" data-t="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>
+      <div><label class="lbl" for="d-text">Nima gaplashildi?${cl?" (mijoz tarixiga yoziladi)":""}</label><textarea class="f" id="d-text" placeholder="Masalan: xodimlar bo'limida muammo bor ekan"></textarea></div>
+      <div class="two"><div><label class="lbl" for="d-next">Keyingi uchrashuv (ixtiyoriy)</label><input class="f" id="d-next" type="date"></div><div><label class="lbl" for="d-ntime">Vaqt</label><input class="f" id="d-ntime" type="time" value="${esc(e.time||"15:00")}"></div></div>
+      <div class="err" id="d-err"></div>
+      <div class="actions"><button class="primary" type="submit">Saqlash</button></div>
+    </form>`;
+  setTimeout(()=>{ const f=$("#d-text"); if(f) f.focus(); },50);
+}
+function openClientForm(){
+  state.sheet={kind:"newclient"}; $("#ov").hidden=false; $("#sheet").className="sheet";
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><h2>Mijoz qo'shish</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <form id="clForm" class="list" novalidate>
+      <div><label class="lbl" for="n-name">Klinika nomi <span class="req">*</span></label><input class="f" id="n-name" autocomplete="off"></div>
+      <div class="two"><div><label class="lbl" for="n-phone">Telefon</label><input class="f" id="n-phone" inputmode="tel"></div><div><label class="lbl" for="n-contact">Mas'ul shaxs</label><input class="f" id="n-contact"></div></div>
+      <div class="two"><div><label class="lbl" for="n-st">Holati</label><select class="f" id="n-st">${Object.entries(CST).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div><div><label class="lbl" for="n-domain">Sayt</label><input class="f" id="n-domain" placeholder="klinika.zendo.clinic"></div></div>
+      <div class="err" id="n-err"></div>
+      <div class="actions"><button class="primary" type="submit">Qo'shish</button></div>
+    </form>`;
+  setTimeout(()=>$("#n-name").focus(),50);
+}
+function openCallForm(){
+  if(!state.plan) return;
+  state.sheet={kind:"newcall"}; $("#ov").hidden=false; $("#sheet").className="sheet";
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><h2>Rejaga qo'ng'iroq qo'shish</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <form id="callForm" class="list" novalidate>
+      <div><label class="lbl" for="f-name">Klinika nomi <span class="req">*</span></label><input class="f" id="f-name" autocomplete="off"></div>
+      <div class="two"><div><label class="lbl" for="f-phone">Telefon</label><input class="f" id="f-phone" inputmode="tel"></div><div><label class="lbl" for="f-day">Qaysi kun</label><select class="f" id="f-day">${(state.plan.days||[]).map(d=>`<option value="${esc(d.id)}"${d.id===state.day?" selected":""}>${esc(d.label)}</option>`).join("")}</select></div></div>
+      <div><label class="lbl" for="f-grp">Guruh</label><select class="f" id="f-grp">${Object.entries(GROUPS).filter(([k])=>k!=="qayta").map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>
+      <div><label class="lbl" for="f-task">Nima qilish kerak</label><input class="f" id="f-task"></div>
+      <div class="err" id="f-err"></div>
+      <div class="actions"><button class="primary" type="submit">Qo'shish</button></div>
+    </form>`;
+  setTimeout(()=>$("#f-name").focus(),50);
+}
+
+/* ---------- main render ---------- */
+function render(){
+  const a=document.activeElement;
+  if(a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.type!=="checkbox" && $("#main").contains(a)){ state.pendingRender=true; return; }
+  doRender();
+}
+function doRender(){
+  state.pendingRender=false;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.tab===state.tab)));
+  const titles={bugun:"Bugun", kalendar:"Kalendar", mijozlar:"Mijozlar", reja:"Haftalik reja"};
+  $("#title").textContent=titles[state.tab];
+  const t=todayStr();
+  $("#subLabel").textContent = state.tab==="bugun" ? dLong(t) : state.tab==="mijozlar" ? `${state.clients.size} ta mijoz` : state.tab==="reja" && state.plan ? `${state.plan.weekLabel||""} · ${counts(callsFor(null)).done}/${state.calls.size}` : "";
+  $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
+  const fab=$("#fab"); fab.hidden=!state.db;
+  fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="reja" ? "+ Qo'ng'iroq" : "+ Kalendarga";
+  const main=$("#main");
+  main.innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : renderReja();
+}
+
+/* ---------- writes ---------- */
+const chains=new Map();
+function chain(path, fn){ const p=(chains.get(path)||Promise.resolve()).then(fn); chains.set(path, p.catch(()=>{})); return p; }
+function writeCall(id, patch){
+  const c=state.calls.get(id); if(!c||!state.db) return Promise.resolve();
+  Object.assign(c, patch);
+  return chain("calls/"+id, ()=>state.db.doc("calls/"+id).update({...patch, updatedAt:new Date().toISOString()}))
+    .then(()=>{ const s=document.getElementById("sv-"+id); if(s) s.textContent="Saqlandi"; })
+    .catch(e=>setNotice(failMsg(e)));
+}
+function updateClient(id, patch){
+  const c=state.clients.get(id); if(!c||!state.db) return Promise.resolve();
+  Object.assign(c, patch);
+  return chain("clients/"+id, ()=>state.db.doc("clients/"+id).update(patch)).catch(e=>setNotice(failMsg(e)));
+}
+async function addHistory(clientId, entry){
+  if(!clientId||!state.db) return;
+  const id=uid("h");
+  const data={date:entry.date||todayStr(), at:new Date().toISOString(), type:entry.type||"note", text:entry.text||"", tags:entry.tags||[], ...(entry.callId?{callId:entry.callId}:{}), ...(entry.eventId?{eventId:entry.eventId}:{})};
+  await state.db.doc("clients/"+clientId+"/history/"+id).set(data);
+  const c=state.clients.get(clientId);
+  if(c && (!c.lastContactAt || data.date>=c.lastContactAt)) await updateClient(clientId,{lastContactAt:data.date, lastContactText:(data.text||"").slice(0,140)});
+  return id;
+}
+const timers={};
+function debounceField(id, field, value){
+  clearTimeout(timers[id+field]);
+  const s=document.getElementById("sv-"+id); if(s) s.textContent="Yozilmoqda…";
+  timers[id+field]=setTimeout(()=>{ if((state.calls.get(id)||{})[field]!==value) writeCall(id,{[field]:value}); else if(s) s.textContent=""; },700);
+}
+async function syncCallHistory(id){
+  const c=state.calls.get(id); if(!c) return;
+  const cl=clientForCall(c); if(!cl) return;
+  const s=c.st||"kut"; if(s==="kut") return;
+  const text=[ST_LABEL[s], (c.note||"").trim()].filter(Boolean).join(". ");
+  try{
+    if(c.histId){ await chain("clients/"+cl.id+"/history/"+c.histId, ()=>state.db.doc("clients/"+cl.id+"/history/"+c.histId).update({text, date:c.day||todayStr()})); }
+    else { const hid=await addHistory(cl.id,{type:"call", text, date:todayStr(), callId:id}); if(hid) await writeCall(id,{histId:hid, clientId:cl.id}); }
+    await updateClient(cl.id,{lastContactAt:todayStr(), lastContactText:text.slice(0,140)});
+  }catch(e){ setNotice(failMsg(e)); }
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e=>{
+  const b=e.target.closest("button, [data-act]"); if(!b) return;
+  if(b.dataset.tab){ state.tab=b.dataset.tab; state.open=null; doRender(); window.scrollTo({top:0}); return; }
+  const act=b.dataset.act, id=b.dataset.id;
+  if(!act) return;
+  switch(act){
+    case "close": closeSheet(); return;
+    case "client": openClient(id); return;
+    case "goreja": state.tab="reja"; state.rejaView="kun"; state.day=todayStr(); doRender(); return;
+    case "rview": state.rejaView=b.dataset.v; state.open=null; doRender(); return;
+    case "rday": state.day=b.dataset.day; state.open=null; doRender(); return;
+    case "calday": state.calDay=b.dataset.day; doRender(); return;
+    case "calshift": state.calDay=addDays(state.calDay||todayStr(), Number(b.dataset.n)); doRender(); return;
+    case "cfilter": state.cf=b.dataset.f; doRender(); return;
+    case "filter": state.st=b.dataset.st; doRender(); return;
+    case "newev": openEventForm({clientId:b.dataset.client||null, date: state.tab==="kalendar"?state.calDay:todayStr(), back:b.dataset.client||null}); return;
+    case "evedit": openEventForm({id}); return;
+    case "unpick": $("#e-pickwrap").innerHTML=clientPicker(null); setTimeout(()=>$("#e-csearch").focus(),30); return;
+    case "pick": $("#e-pickwrap").innerHTML=clientPicker(id); return;
+    case "tag": b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed")!=="true")); return;
+    case "evdone": {
+      const ev=state.events.get(id); if(!ev) return;
+      if(ev.done){ ev.done=false; doRender(); if(state.sheet&&state.sheet.kind==="client") renderClientSheet(state.sheet.id); chain("events/"+id,()=>state.db.doc("events/"+id).update({done:false})).catch(er=>setNotice(failMsg(er))); return; }
+      openDoneForm(id); return;
+    }
+    case "evdel": {
+      if(state.confirmDel!=="ev:"+id){ state.confirmDel="ev:"+id; openEventForm({id}); return; }
+      state.confirmDel=null; state.events.delete(id); closeSheet(); doRender();
+      state.db.doc("events/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
+    }
+    case "toggle": state.open=state.open===id?null:id; state.confirmDel=null; doRender(); return;
+    case "st": { const c=state.calls.get(id); if(c && c.st!==b.dataset.st){ await writeCall(id,{st:b.dataset.st}); doRender(); syncCallHistory(id); } return; }
+    case "callzoom": { const c=state.calls.get(id); const cl=c?clientForCall(c):null; openEventForm({clientId:cl?cl.id:null, type:"zoom", title:c?`Zoom: ${c.name}`:"", date:addDays(todayStr(),1)}); return; }
+    case "next": {
+      const c=state.calls.get(id); const days=(state.plan.days||[]).map(d=>d.id); const i=days.indexOf(c.day);
+      if(i>=0 && i<days.length-1){ const nd=days[i+1]; const maxOrd=Math.max(0,...[...state.calls.values()].filter(x=>x.day===nd).map(x=>x.ord||0)); writeCall(id,{day:nd, ord:maxOrd+1}); state.open=null; doRender(); }
+      else setNotice("Bu haftaning oxirgi kuni. Keyingi hafta rejasiga Claude qo'shib beradi.");
+      return;
+    }
+    case "del": {
+      if(state.confirmDel!==id){ state.confirmDel=id; doRender(); return; }
+      state.confirmDel=null; state.open=null; state.calls.delete(id); doRender();
+      state.db.doc("calls/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
+    }
+  }
+});
+$("#fab").addEventListener("click", ()=>{ if(state.tab==="mijozlar") openClientForm(); else if(state.tab==="reja") openCallForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:todayStr()}); });
+$("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
+document.addEventListener("change", e=>{
+  const t=e.target;
+  if(t.dataset.act==="block" && state.plan && state.db){
+    const blocks=state.plan.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
+    state.plan={...state.plan, blocks}; state.db.doc("meta/plan").update({blocks}).catch(er=>setNotice(failMsg(er))); doRender(); return;
+  }
+  if(t.dataset.cfield && state.sheet && state.sheet.kind==="client"){
+    const f=t.dataset.cfield; let v=t.value.trim(); if(f==="users") v=v?Number(v.replace(/\D/g,""))||null:null;
+    updateClient(state.sheet.id,{[f]:v}).then(()=>{ const s=$("#c-saved"); if(s) s.textContent="Saqlandi"; });
+  }
+});
+document.addEventListener("input", e=>{
+  const t=e.target;
+  if(t.id==="search"){ state.q=t.value; clearTimeout(timers.s); timers.s=setTimeout(()=>{ const p=t.selectionStart; doRender(); const s=$("#search"); if(s){ s.focus(); try{s.setSelectionRange(p,p);}catch(_){} } },250); return; }
+  if(t.id==="csearch"){ state.cq=t.value; clearTimeout(timers.c); timers.c=setTimeout(()=>{ const p=t.selectionStart; doRender(); const s=$("#csearch"); if(s){ s.focus(); try{s.setSelectionRange(p,p);}catch(_){} } },250); return; }
+  if(t.id==="e-csearch"){
+    const q=t.value.trim().toLowerCase(), box=$("#e-plist");
+    if(!q){ box.hidden=true; return; }
+    const m=[...state.clients.values()].filter(c=>(c.name||"").toLowerCase().includes(q)).slice(0,12);
+    box.hidden=false; box.innerHTML= m.length? m.map(c=>`<button type="button" data-act="pick" data-id="${esc(c.id)}">${esc(c.name)}</button>`).join("") : `<div class="empty" style="padding:8px">Topilmadi</div>`;
+    return;
+  }
+  if(t.dataset.field){ debounceField(t.dataset.id, t.dataset.field, t.value); }
+});
+document.addEventListener("focusout", e=>{
+  const t=e.target;
+  if(t.dataset && t.dataset.field==="note"){ const id=t.dataset.id; setTimeout(()=>{ const c=state.calls.get(id); if(c && (c.st||"kut")!=="kut") syncCallHistory(id); },800); }
+  setTimeout(()=>{ const a=document.activeElement; const typing=a && /INPUT|TEXTAREA|SELECT/.test(a.tagName) && a.type!=="checkbox";
+    if(state.pendingRender && !(typing && $("#main").contains(a))) doRender();
+    if(state.sheetPending && !(typing && $("#sheet").contains(a))){ state.sheetPending=false; renderSheetSafe(); } },900);
+});
+document.addEventListener("submit", async e=>{
+  e.preventDefault();
+  const f=e.target;
+  if(f.id==="evForm"){
+    const title=$("#e-title").value.trim(); if(!title){ $("#e-err").textContent="Nima haqida ekanini yozing."; return; }
+    const date=$("#e-date").value; if(!date){ $("#e-err").textContent="Sanani tanlang."; return; }
+    const data={type:$("#e-type").value, clientId:$("#e-client").value||null, title, date, time:$("#e-time").value||"", note:$("#e-note").value.trim()};
+    const id=state.sheet.id || uid("e"); const existing=state.events.get(id);
+    try{
+      if(existing){ await chain("events/"+id,()=>state.db.doc("events/"+id).update(data)); Object.assign(existing,data); }
+      else { const full={...data, done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+id).set(full); state.events.set(id,{id,...full}); }
+      const back=state.sheet.back; state.confirmDel=null;
+      if(back) openClient(back); else closeSheet();
+      state.calDay=date; doRender();
+    }catch(er){ $("#e-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="doneForm"){
+    const ev=state.events.get(state.sheet.id); if(!ev) return;
+    const text=$("#d-text").value.trim(); const tags=[...f.querySelectorAll('.tag[aria-pressed="true"]')].map(x=>x.dataset.t);
+    const next=$("#d-next").value, ntime=$("#d-ntime").value;
+    try{
+      await chain("events/"+ev.id,()=>state.db.doc("events/"+ev.id).update({done:true, doneAt:new Date().toISOString(), result:text}));
+      Object.assign(ev,{done:true,result:text});
+      if(ev.clientId){ await addHistory(ev.clientId,{type:ev.type==="task"?"note":ev.type, text: ev.title+(text?": "+text:""), tags, date:todayStr(), eventId:ev.id}); }
+      if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
+      const back=state.sheet.back; if(back) openClient(back); else closeSheet(); doRender();
+    }catch(er){ $("#d-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="histForm"){
+    const cid=state.sheet.id; const text=$("#h-text").value.trim(); const tags=[...f.querySelectorAll('.tag[aria-pressed="true"]')].map(x=>x.dataset.t);
+    if(!text && !tags.length){ $("#h-err").textContent="Nima gaplashilganini yozing yoki mavzuni tanlang."; return; }
+    try{ await addHistory(cid,{type:$("#h-type").value, text, tags, date:$("#h-date").value||todayStr()}); $("#h-text").value=""; f.querySelectorAll(".tag").forEach(x=>x.setAttribute("aria-pressed","false")); $("#h-err").textContent=""; document.activeElement.blur(); renderClientSheet(cid); }
+    catch(er){ $("#h-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="clForm"){
+    const name=$("#n-name").value.trim(); if(!name){ $("#n-err").textContent="Klinika nomini yozing."; return; }
+    const id=uid("m"); const domain=$("#n-domain").value.trim().replace(/^https?:\/\//,"").replace(/\/+$/,"");
+    const data={name, phone:$("#n-phone").value.trim(), contact:$("#n-contact").value.trim(), st:$("#n-st").value, createdAt:new Date().toISOString()}; if(domain) data.domain=domain;
+    try{ await state.db.doc("clients/"+id).set(data); state.clients.set(id,{id,...data}); openClient(id); doRender(); }catch(er){ $("#n-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="callForm"){
+    const name=$("#f-name").value.trim(); if(!name){ $("#f-err").textContent="Klinika nomini yozing."; return; }
+    const day=$("#f-day").value; const maxOrd=Math.max(0,...[...state.calls.values()].filter(x=>x.day===day).map(x=>x.ord||0));
+    const data={week:state.plan.week, day, who:"siz", ord:maxOrd+1, name, grp:$("#f-grp").value, task:$("#f-task").value.trim(), st:"kut", phone:$("#f-phone").value.trim(), added:true, createdAt:new Date().toISOString()};
+    const id=uid("u");
+    try{ await state.db.doc("calls/"+id).set(data); state.calls.set(id,{id,...data}); closeSheet(); state.tab="reja"; state.rejaView="kun"; state.day=day; state.open=id; doRender(); const card=document.getElementById("card-"+id); if(card) card.scrollIntoView({block:"center"}); }
+    catch(er){ $("#f-err").textContent=failMsg(er); }
+  }
+});
+
+/* ---------- data (Supabase) ---------- */
+const SB_URL="https://ihrmneuuqbuhgmccsgsh.supabase.co";
+const SB_KEY="sb_publishable_i1MW661-vQYTQrj23gMg-Q_BKV6xCnp";
+const COLS={
+  clients:["id","name","site_id","domain","st","phone","contact","users","users_note","billing","last_contact_at","last_contact_text","created_at","updated_at"],
+  history:["id","client_id","date","type","text","tags","call_id","event_id","created_at"],
+  events:["id","client_id","type","title","date","time","note","done","done_at","result","created_at"],
+  calls:["id","week","day","ord","name","grp","task","st","phone","site","info","pri","note","client_id","hist_id","added","updated_at"],
+  plans:["week","title","week_label","days","rules","blocks","is_current","updated_at"]
+};
+const toSnake=k=>k.replace(/[A-Z]/g,m=>"_"+m.toLowerCase());
+const toCamel=k=>k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
+function toRow(table,obj){
+  const r={};
+  for(const [k,v] of Object.entries(obj)){
+    let sk=toSnake(k);
+    if(table==="history" && k==="at") sk="created_at";
+    if(COLS[table].includes(sk)) r[sk]=(v===""&&/_at$|^date$|^day$/.test(sk))?null:v;
+  }
+  if(table==="clients" && "billing" in r && r.billing==null) r.billing={};
+  return r;
+}
+function fromRow(table,row){
+  const o={};
+  for(const [k,v] of Object.entries(row)){ if(v===null) continue; o[table==="history"&&k==="created_at"?"at":toCamel(k)]=v; }
+  if(table==="calls" && o.ord!=null) o.ord=Number(o.ord);
+  return o;
+}
+/* Path → table. Keeps the old document-style API so the app code above stays unchanged. */
+function parsePath(path){
+  const p=path.split("/");
+  if(p[0]==="meta" && p[1]==="plan") return {table:"plans", plan:true};
+  if(p[0]==="clients" && p[2]==="history") return {table:"history", id:p[3], parent:p[1]};
+  return {table:p[0], id:p[1]};
+}
+function makeDb(sb){
+  const chk=({data,error})=>{ if(error) throw error; return data; };
+  const live=(key, filter, refetch)=>{
+    let t=null; const kick=()=>{ clearTimeout(t); t=setTimeout(refetch,250); };
+    const ch=sb.channel(key+":"+Math.random().toString(36).slice(2)).on("postgres_changes",{event:"*",schema:"public",table:filter.table,...(filter.f?{filter:filter.f}:{})},kick).subscribe();
+    const vis=()=>{ if(document.visibilityState==="visible") kick(); };
+    document.addEventListener("visibilitychange",vis);
+    return ()=>{ clearTimeout(t); sb.removeChannel(ch); document.removeEventListener("visibilitychange",vis); };
+  };
+  function doc(path){
+    const P=parsePath(path);
+    if(P.plan){
+      const q=()=>sb.from("plans").select("*").eq("is_current",true).limit(1).maybeSingle();
+      return {
+        update: async patch=>chk(await sb.from("plans").update({...toRow("plans",patch), updated_at:new Date().toISOString()}).eq("is_current",true)),
+        onSnapshot(cb,err){
+          const run=async()=>{ try{ const d=chk(await q()); cb({exists:!!d, data:()=>d?fromRow("plans",d):null}); }catch(e){ err&&err(e); } };
+          run(); return live("plan",{table:"plans"},run);
+        }
+      };
+    }
+    const base=()=>{ let r={id:P.id}; if(P.parent) r.client_id=P.parent; return r; };
+    return {
+      set: async data=>chk(await sb.from(P.table).upsert({...toRow(P.table,data), ...base()})),
+      update: async patch=>{ const row=toRow(P.table,patch); if(!Object.keys(row).length) return; chk(await sb.from(P.table).update(row).eq("id",P.id)); },
+      delete: async ()=>chk(await sb.from(P.table).delete().eq("id",P.id))
+    };
+  }
+  function collection(path){
+    const P=parsePath(path); const filters=[];
+    if(P.parent) filters.push(["client_id",P.parent]);
+    const api={
+      where(field,op,val){ filters.push([toSnake(field),val]); return api; },
+      onSnapshot(cb,err){
+        const run=async()=>{
+          try{
+            let q=sb.from(P.table).select("*").limit(5000);
+            for(const [f,v] of filters) q=q.eq(f,v);
+            const rows=chk(await q);
+            cb({docs:rows.map(r=>({id:r.id, data:()=>{ const o=fromRow(P.table,r); delete o.id; return o; }}))});
+          }catch(e){ err&&err(e); }
+        };
+        run();
+        const f=filters.length===1?`${filters[0][0]}=eq.${filters[0][1]}`:null;
+        return live(path,{table:P.table,f},run);
+      }
+    };
+    return api;
+  }
+  return {doc, collection};
+}
+
+let unsubCalls=null;
+function subscribeCalls(week){
+  if(unsubCalls) unsubCalls();
+  unsubCalls=state.db.collection("calls").where("week","==",week).onSnapshot(snap=>{
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.calls=m; render();
+  }, ()=>setNotice("Qo'ng'iroqlar rejasini o'qib bo'lmadi."));
+}
+function startData(db){
+  $("nav.tabs").hidden=false;
+  const timer=setTimeout(()=>setNotice("Ma'lumotlarga hali ulanib bo'lmadi. Internetni tekshiring, sahifa o'zi qayta urinadi."),10000);
+  state.db=db;
+  db.doc("meta/plan").onSnapshot(snap=>{
+    clearTimeout(timer); setNotice("");
+    if(!snap.exists){ state.plan=null; render(); return; }
+    const p=snap.data(); const changed=!state.plan||state.plan.week!==p.week; state.plan=p;
+    const ids=(p.days||[]).map(d=>d.id); if(!state.day||!ids.includes(state.day)){ const t=todayStr(); state.day=ids.includes(t)?t:(ids.find(d=>d>t)||ids[0]); }
+    if(changed) subscribeCalls(p.week);
+    render();
+  }, ()=>{ clearTimeout(timer); setNotice("Rejani o'qib bo'lmadi."); });
+  db.collection("clients").onSnapshot(snap=>{
+    clearTimeout(timer);
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.clients=m; render();
+    if(state.sheet&&state.sheet.kind==="client") renderSheetSafe();
+  }, ()=>setNotice("Mijozlar ro'yxatini o'qib bo'lmadi."));
+  db.collection("events").onSnapshot(snap=>{
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.events=m; render();
+    if(state.sheet&&state.sheet.kind==="client") renderSheetSafe();
+  }, ()=>setNotice("Kalendarni o'qib bo'lmadi."));
+  doRender();
+}
+
+/* ---------- auth ---------- */
+function showLogin(msg){
+  $("nav.tabs").hidden=true;
+  $("#title").textContent="Kirish"; $("#subLabel").textContent=""; $("#headExtra").innerHTML=""; $("#fab").hidden=true;
+  $("#main").innerHTML=`<form id="loginForm" class="list" novalidate style="max-width:420px;margin:24px auto">
+    <div><label class="lbl" for="l-email">Email</label><input class="f" id="l-email" type="email" autocomplete="username" inputmode="email"></div>
+    <div><label class="lbl" for="l-pass">Parol</label><input class="f" id="l-pass" type="password" autocomplete="current-password"></div>
+    <div class="err" id="l-err">${esc(msg||"")}</div>
+    <div class="actions"><button class="primary" type="submit">Kirish</button><button class="ghost" type="button" id="l-signup">Birinchi marta: ro'yxatdan o'tish</button></div>
+  </form>`;
+}
+async function afterLogin(sb, session){
+  const uidv=session.user.id;
+  const {data,error}=await sb.from("app_admins").select("user_id").eq("user_id",uidv).maybeSingle();
+  if(error||!data){
+    $("nav.tabs").hidden=true;
+    $("#title").textContent="Ruxsat kutilmoqda"; $("#fab").hidden=true;
+    $("#main").innerHTML=`<p class="empty">Hisobingiz yaratildi, lekin hali ma'lumotlarga ruxsat berilmagan.<br>Claude'ga shu ID'ni yuboring:<br><b style="user-select:all">${esc(uidv)}</b><br><br><button class="linkbtn" data-act="logout">Chiqish</button></p>`;
+    return;
+  }
+  startData(makeDb(sb));
+}
+(async function init(){
+  if(!window.supabase){ $("#main").innerHTML=`<p class="empty">Kutubxona yuklanmadi. Internetni tekshirib sahifani yangilang.</p>`; return; }
+  const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  window._sb=sb;
+  document.addEventListener("click", async e=>{ const b=e.target.closest('[data-act="logout"]'); if(b){ await sb.auth.signOut(); location.reload(); } });
+  document.addEventListener("click", async e=>{
+    if(e.target.id!=="l-signup") return;
+    const email=$("#l-email").value.trim(), password=$("#l-pass").value;
+    if(!email||password.length<8){ $("#l-err").textContent="Email va kamida 8 belgili parol kiriting."; return; }
+    const {data,error}=await sb.auth.signUp({email,password,options:{emailRedirectTo:location.origin+location.pathname}});
+    if(error){ $("#l-err").textContent=error.message; return; }
+    if(data.session) afterLogin(sb,data.session);
+    else $("#l-err").textContent="Emailingizga tasdiqlash xati yuborildi. Uni ochib, keyin shu yerda kiring.";
+  });
+  document.addEventListener("submit", async e=>{
+    if(e.target.id!=="loginForm") return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    const email=$("#l-email").value.trim(), password=$("#l-pass").value;
+    const {data,error}=await sb.auth.signInWithPassword({email,password});
+    if(error){ $("#l-err").textContent="Kirib bo'lmadi: "+error.message; return; }
+    afterLogin(sb,data.session);
+  }, true);
+  const {data:{session}}=await sb.auth.getSession();
+  if(session) afterLogin(sb,session); else showLogin();
+})();
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+</body>
+</html>
