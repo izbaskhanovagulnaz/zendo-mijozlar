@@ -421,6 +421,12 @@ form.list{display:flex;flex-direction:column;gap:14px}
   .wks{flex-wrap:wrap;overflow:visible}
 }
 @media (min-width:900px) and (max-width:1279px){ .days.d7 .ring.sm{display:none} }
+/* to'lovlar: cash vs value */
+.pmnav{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.pmnav>button:not(.linkbtn){width:32px;height:32px;border-radius:9px;background:var(--card);box-shadow:var(--shadow);font-size:18px;color:var(--accent)}
+.pmnav b{font-size:17px;min-width:130px;text-align:center}
+.pt b.good{color:var(--green-x)} .pt b.muted{color:var(--ink2)}
+.pnote{margin:-6px 4px 14px;font-size:12.5px}
 </style>
 </head>
 <body class="auth">
@@ -893,31 +899,42 @@ function payPill(ps){
   return `<span class="pill">Ma'lumot yo'q</span>`;
 }
 const sumMoney=list=>list.reduce((a,x)=>a+(Number(x)||0),0);
+state.payments=new Map(); state.pm=todayStr().slice(0,7);
+const monthName=ym=>{ const [y,m]=ym.split("-").map(Number); return cap1(MF[m-1]); };
+const paysOf=id=>[...state.payments.values()].filter(x=>x.clientId===id).sort((a,b)=>(b.paidAt||"").localeCompare(a.paidAt||""));
+const renewAmt=b=>(Number(b.monthly)||0)*(Number(b.periodMonths)||1);
 function tolovRow(c){
-  const ps=payState(c), b=ps.b;
+  const ps=payState(c), b=ps.b, per=Number(b.periodMonths)||1, last=paysOf(c.id)[0];
+  const lastAt=last?last.paidAt:b.lastPaidAt, lastAmt=last?last.amount:(lastAt?b.lastPaidAmount:null);
+  const sub = lastAt ? `${dLabel(lastAt)}da ${last&&last.months?last.months:per} oyga to'lagan${b.paidUntil?` · keyingi: ${dLabel(b.paidUntil)}`:""}` : b.paidUntil ? `Keyingi to'lov: ${dLabel(b.paidUntil)}` : (c.domain||CST[c.st]||"");
   return `<div class="r tr" data-act="paysheet" data-id="${esc(c.id)}" role="button">${avatar(c.name)}
-    <div class="rt"><b>${esc(c.name)}</b><span>${b.paidUntil?`Keyingi to'lov: ${esc(dLabel(b.paidUntil))}`:esc(c.domain||CST[c.st]||"")}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
+    <div class="rt"><b>${esc(c.name)}</b><span>${esc(sub)}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
     ${payPill(ps)}
-    <span class="pc">${b.monthly?esc(money(b.monthly,b.currency)):"—"}<small>oyiga</small></span>
-    <span class="pc">${b.lastPaidAmount?esc(money(b.lastPaidAmount,b.currency)):"—"}<small>${b.lastPaidAt?esc(dLabel(b.lastPaidAt)):"oxirgi to'lov"}</small></span>
+    <span class="pc">${b.monthly?`${esc(money(renewAmt(b),b.currency))}<small>${per} oyga · oyiga ${esc(money(b.monthly,b.currency).replace(" so'm",""))}</small>`:"—"}</span>
+    <span class="pc">${lastAmt?`${esc(money(lastAmt,b.currency))}<small>${lastAt?esc(dLabel(lastAt)):"sana noma'lum"}</small>`:"—"}</span>
     ${ICON.chev}</div>`;
 }
 function renderTolovlar(){
-  const t=todayStr(), all=[...state.clients.values()];
+  const t=todayStr(), cm=t.slice(0,7), pm=state.pm, all=[...state.clients.values()];
   const billed=all.filter(hasBilling).map(c=>({c,ps:payState(c)}));
+  const inPm=d=>(d||"").slice(0,7)===pm;
+  const cash=[...state.payments.values()].filter(x=>inPm(x.paidAt)), cashSum=sumMoney(cash.map(x=>x.amount));
+  const paidIds=new Set(cash.map(x=>x.clientId));
+  const expect=billed.filter(x=>x.ps.b.paidUntil && (inPm(x.ps.b.paidUntil) || (pm===cm && x.ps.k==="over")));
+  const expSum=sumMoney(expect.map(x=>renewAmt(x.ps.b))), expLate=expect.filter(x=>x.ps.k==="over").length;
   const active=billed.filter(x=>x.ps.k==="ok"||x.ps.k==="soon");
-  const monthly=sumMoney(active.map(x=>x.ps.b.monthly));
+  const mrr=sumMoney(active.map(x=>x.ps.b.monthly));
   const debtors=billed.filter(x=>x.ps.debt), debt=sumMoney(debtors.map(x=>x.ps.b.outstanding));
-  const soon=billed.filter(x=>x.ps.k==="soon"), soonSum=sumMoney(soon.map(x=>(Number(x.ps.b.monthly)||0)*(Number(x.ps.b.periodMonths)||1)));
-  const over=billed.filter(x=>x.ps.k==="over");
-  const ym=t.slice(0,7), paidM=billed.filter(x=>(x.ps.b.lastPaidAt||"").slice(0,7)===ym), paidSum=sumMoney(paidM.map(x=>x.ps.b.lastPaidAmount));
+  const soon=billed.filter(x=>x.ps.k==="soon"), over=billed.filter(x=>x.ps.k==="over");
   const nodata=all.filter(c=>c.st==="faol" && !hasBilling(c));
+  const mn=monthName(pm), past=pm<cm, fut=pm>cm;
   const F={
     attn:["Diqqat talab", billed.filter(x=>x.ps.attn).map(x=>x.c)],
+    paid:[`${mn}da to'laganlar`, all.filter(c=>paidIds.has(c.id))],
+    expect:[`${mn}da to'lashi kerak`, expect.map(x=>x.c)],
     soon:["7 kun qoldi", soon.map(x=>x.c)],
     over:["Muddati o'tgan", over.map(x=>x.c)],
     debt:["Qarzdor", debtors.map(x=>x.c)],
-    ok:["To'langan", billed.filter(x=>x.ps.k==="ok"&&!x.ps.debt).map(x=>x.c)],
     all:["Hammasi", billed.map(x=>x.c)],
     nodata:["Ma'lumot yo'q", nodata]
   };
@@ -925,15 +942,17 @@ function renderTolovlar(){
   const order={over:0,soon:1,ok:2,nosub:3,nodata:4};
   const list=F[state.pf][1].slice().sort((a,b)=>{ const pa=payState(a), pb=payState(b);
     return (pb.debt-pa.debt) || (order[pa.k]-order[pb.k]) || ((pa.b.paidUntil||"9").localeCompare(pb.b.paidUntil||"9")) || (a.name||"").localeCompare(b.name||""); });
-  const tile=(act,f,col,icon,val,sub,lbl,bad)=>`<button class="card tile pt${state.pf===f?" on":""}" data-act="${act}" data-f="${f}"><span class="ic" style="background:${col}">${icon}</span><b${bad?' class="bad"':""}>${val}</b><span class="ts">${sub}</span><span>${lbl}</span></button>`;
-  let h=`<div class="stats pstats">
-    ${tile("pfilter","ok","var(--green)",ICON.card,esc(money(monthly)),`${active.length} ta faol obuna`,"Oylik tushum")}
-    ${tile("pfilter","debt","var(--red)",ICON.card,esc(money(debt)),`${debtors.length} ta mijoz`,"Qarzdorlik",debt>0)}
-    ${tile("pfilter","soon","var(--orange)",ICON.clock,String(soon.length),soon.length?`~${esc(money(soonSum))} kutilmoqda`:"hech kim yo'q","7 kun ichida to'lov")}
-    ${tile("pfilter","over","var(--purple)",ICON.clock,String(over.length),`${cap1(MF[parseD(t).getMonth()])}da tushgan: ${esc(money(paidSum))}`,"Muddati o'tgan",over.length>0)}
-  </div>`;
+  const tile=(f,col,icon,val,sub,lbl,cls)=>`<button class="card tile pt${state.pf===f?" on":""}" data-act="pfilter" data-f="${f}"><span class="ic" style="background:${col}">${icon}</span><b${cls?` class="${cls}"`:""}>${val}</b><span class="ts">${sub}</span><span>${lbl}</span></button>`;
+  let h=`<div class="pmnav"><button data-act="pmonth" data-n="-1" aria-label="Oldingi oy">‹</button><b>${esc(mn)} ${pm.slice(0,4)}</b><button data-act="pmonth" data-n="1" aria-label="Keyingi oy">›</button>${pm!==cm?`<button class="linkbtn" data-act="pmonth" data-n="0">Shu oy</button>`:""}</div>
+  <div class="stats pstats">
+    ${tile("paid","var(--green)",ICON.card,esc(money(cashSum)),`${cash.length} ta to'lov${fut?" (hali kelmagan oy)":""}`,`${mn}da tushgan`,"good")}
+    ${tile("expect","var(--orange)",ICON.clock,esc(money(expSum)),`${expect.length} ta mijoz${expLate?` · ${expLate} tasi kechikkan`:""}`,`${mn}da ${past?"to'lashi kerak edi":"kutilmoqda"}`)}
+    ${tile("debt","var(--red)",ICON.card,esc(money(debt)),`${debtors.length} ta mijoz`,"Qarzdorlik",debt>0?"bad":"")}
+    ${tile("all","var(--blue)",ICON.list||ICON.card,esc(money(mrr)),`${active.length} ta faol obuna, oyga bo'lingan`,"Obunalar qiymati oyiga","muted")}
+  </div>
+  <p class="hint pnote">«Obunalar qiymati oyiga» — oldindan 3–6 oyga to'langan summalarning bir oyga to'g'ri keladigan qismi. Bu oy kassaga tushgan pul emas; tushgan pul birinchi kartada.</p>`;
   h+=`<div class="card"><div class="chipsrow pchips" role="group" aria-label="Filtr">${Object.entries(F).map(([k,[l,a]])=>`<button class="chip" data-act="pfilter" data-f="${k}" aria-pressed="${state.pf===k}">${esc(l)} ${a.length}</button>`).join("")}</div>
-    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Oylik</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<p class="empty">${state.pf==="nodata"?"Hamma faol mijozlarda to'lov ma'lumoti bor.":"Bu filtrda mijoz yo'q."}</p>`}</div>`;
+    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Tarif</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<p class="empty">${state.pf==="nodata"?"Hamma faol mijozlarda to'lov ma'lumoti bor.":"Bu filtrda mijoz yo'q."}</p>`}</div>`;
   if(nodata.length && state.pf!=="nodata") h+=`<p class="hint" style="margin:12px 4px">${nodata.length} ta faol mijozda to'lov ma'lumoti yo'q. «Ma'lumot yo'q» filtrida ularni ochib, sana va summani kiriting.</p>`;
   return h;
 }
@@ -954,6 +973,7 @@ function openPaySheet(id){
       <div class="err" id="p-err"></div>
       <div class="actions"><button class="primary" type="submit">To'lovni saqlash</button></div>
     </form>
+    ${paysOf(id).length?`<span class="cap pad">To'lovlar tarixi</span><div class="gl2">${paysOf(id).map(x=>`<div class="r"><div class="rt"><b>${esc(money(x.amount))}</b><span>${esc(dLabel(x.paidAt))} ${x.paidAt?esc(x.paidAt.slice(0,4)):""}${x.months?` · ${x.months} oyga`:""}${x.note?` · ${esc(x.note)}`:""}</span></div><button class="linkbtn del" data-act="paydel" data-id="${esc(x.id)}">${state.confirmDel==="pay:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>`).join("")}</div>`:""}
     <span class="cap pad">Obuna ma'lumoti</span>
     <form id="subForm" class="comp" novalidate>
       <div class="two"><div><label class="lbl" for="s-until">Keyingi to'lov sanasi</label><input class="f" id="s-until" type="date" value="${esc(b.paidUntil||"")}"></div>
@@ -1178,6 +1198,12 @@ document.addEventListener("click", async e=>{
     case "gokal": state.tab="kalendar"; state.calDay=todayStr(); doRender(); window.scrollTo({top:0}); return;
     case "gopay": state.tab="tolovlar"; state.pf="attn"; doRender(); window.scrollTo({top:0}); return;
     case "pfilter": state.pf=b.dataset.f; doRender(); return;
+    case "pmonth": { const n=Number(b.dataset.n); if(!n) state.pm=todayStr().slice(0,7); else { const [y,m]=state.pm.split("-").map(Number); const d=new Date(y,m-1+n,1); state.pm=d.getFullYear()+"-"+pad(d.getMonth()+1); } doRender(); return; }
+    case "paydel": {
+      if(state.confirmDel!=="pay:"+id){ state.confirmDel="pay:"+id; openPaySheet(state.sheet.id); return; }
+      state.confirmDel=null; state.payments.delete(id); const cid=state.sheet.id; openPaySheet(cid); doRender();
+      state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
+    }
     case "paysheet": openPaySheet(id); return;
     case "bq": state.bq=b.dataset.f; doRender(); return;
     case "caltoday": state.calDay=todayStr(); doRender(); return;
@@ -1336,7 +1362,8 @@ document.addEventListener("submit", async e=>{
       b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
       if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
       if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; }
-      try{ await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); closeSheet(); doRender(); }
+      try{ const pid=uid("p"); const row={clientId:id, amount:amt, paidAt:date, months:ext?n:null}; await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
+        await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); closeSheet(); doRender(); }
       catch(er){ $("#p-err").textContent=failMsg(er); }
       return;
     }
@@ -1371,7 +1398,8 @@ const COLS={
   history:["id","client_id","date","type","text","tags","call_id","event_id","created_at"],
   events:["id","client_id","type","title","date","time","time_end","note","done","done_at","result","created_at"],
   calls:["id","week","day","ord","name","grp","task","st","phone","site","info","pri","note","client_id","hist_id","added","updated_at"],
-  plans:["week","title","week_label","days","rules","blocks","is_current","updated_at"]
+  plans:["week","title","week_label","days","rules","blocks","is_current","updated_at"],
+  payments:["id","client_id","amount","paid_at","months","note","created_at"]
 };
 const toSnake=k=>k.replace(/[A-Z]/g,m=>"_"+m.toLowerCase());
 const toCamel=k=>k.replace(/_([a-z])/g,(_,c)=>c.toUpperCase());
@@ -1389,6 +1417,7 @@ function fromRow(table,row){
   const o={};
   for(const [k,v] of Object.entries(row)){ if(v===null) continue; o[table==="history"&&k==="created_at"?"at":toCamel(k)]=v; }
   if(table==="calls" && o.ord!=null) o.ord=Number(o.ord);
+  if(table==="payments" && o.amount!=null) o.amount=Number(o.amount);
   return o;
 }
 /* Path → table. Keeps the old document-style API so the app code above stays unchanged. */
@@ -1480,6 +1509,9 @@ function startData(db){
     if(changed) subscribeCalls(p.week);
     render();
   }, ()=>{ clearTimeout(timer); setNotice("Rejani o'qib bo'lmadi."); });
+  db.collection("payments").onSnapshot(snap=>{
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.payments=m; render();
+  }, ()=>{});
   db.collection("plans").onSnapshot(snap=>{
     const m=new Map(); for(const d of snap.docs) m.set(d.id,{...d.data(), week:d.id}); state.plans=m; render();
   }, ()=>{});
