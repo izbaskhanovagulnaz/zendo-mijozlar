@@ -589,6 +589,18 @@ form.list{display:flex;flex-direction:column;gap:14px}
   .cg{grid-template-columns:36px minmax(0,1fr) 110px 150px 90px 8px} .cg .ph2{display:none!important}
 }
 @media (min-width:900px) and (max-width:1050px){ .cg{grid-template-columns:36px minmax(0,1fr) 110px 150px 8px} .cg .lc{display:none!important} }
+/* prev / next controls — one style everywhere */
+.tb{display:inline-flex;align-items:stretch;height:36px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);overflow:hidden;flex:none}
+.tb>button{height:auto;display:flex;align-items:center;justify-content:center;padding:0 16px;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap;text-align:center;border-radius:0}
+.tb>button+button{border-left:.5px solid var(--sep)}
+.tb>button:hover{background:var(--fill)}
+.tb>button:active{background:var(--fill2)}
+.tb>button.nv{width:36px;padding:0;color:var(--accent);font-size:inherit}
+.tb>button.nv svg,.nvc svg{width:9px;height:14px;display:block}
+.tb>button[aria-current="true"]{color:var(--ink3)}
+.pmsw>button:nth-child(2){min-width:140px}
+.chip.nvc{display:flex;align-items:center;justify-content:center;width:40px;padding:0;color:var(--accent);background:var(--card);box-shadow:var(--shadow)}
+@media (max-width:899px){ .tb{height:38px} .tb>button.nv{width:38px} .tb>button{padding:0 12px} .pmsw{width:100%} .pmsw>button:nth-child(2){flex:1} }
 </style>
 </head>
 <body class="auth">
@@ -906,15 +918,15 @@ function renderKalendar(){
   const days=[...Array(7)].map((_,i)=>addDays(start,i));
   if(!isWide()){
     return `<div class="chipsrow">
-      <button class="chip" data-act="calshift" data-n="-7" aria-label="Oldingi hafta">‹</button>
+      <button class="chip nvc" data-act="calshift" data-n="-7" aria-label="Oldingi hafta"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M7.5 2 2 8l5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       ${days.map(d=>{ const n=eventsOn(d).filter(e=>!e.done).length, dd=parseD(d); return `<button class="chip dayc${d===t?" today":""}" data-act="calday" data-day="${d}" aria-pressed="${d===state.calDay}">${WD[dd.getDay()]}<b>${dd.getDate()}</b>${n?`<small>${n}</small>`:""}</button>`; }).join("")}
-      <button class="chip" data-act="calshift" data-n="7" aria-label="Keyingi hafta">›</button>
+      <button class="chip nvc" data-act="calshift" data-n="7" aria-label="Keyingi hafta"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M2.5 2 8 8l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div><div class="col">${dayCard()}${upcomingCard()}</div>`;
   }
   const v=state.calView, cd=parseD(state.calDay), y=cd.getFullYear();
   const title=v==="day" ? `${dFull(state.calDay)} ${y}` : v==="week" ? `${dLabel(days[0])} – ${dLabel(days[6])} ${y}` : v==="month" ? `${cap1(MF[cd.getMonth()])} ${y}` : String(y);
   const body=v==="day" ? timeGrid([state.calDay]) : v==="week" ? timeGrid(days) : v==="month" ? monthGrid() : yearGrid();
-  return `<div class="ktools"><div class="tb"><button data-act="calnav" data-n="-1" aria-label="Oldingi">‹</button><button data-act="caltoday">Bugun</button><button data-act="calnav" data-n="1" aria-label="Keyingi">›</button></div><b>${esc(title)}</b>
+  return `<div class="ktools"><div class="tb"><button data-act="calnav" data-n="-1" aria-label="Oldingi" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M7.5 2 2 8l5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-act="caltoday">Bugun</button><button data-act="calnav" data-n="1" aria-label="Keyingi" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M2.5 2 8 8l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div><b>${esc(title)}</b>
     <div class="seg" role="group" aria-label="Ko'rinish">${[["day","Kun"],["week","Hafta"],["month","Oy"],["year","Yil"]].map(([k,l])=>`<button data-act="calview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div></div>${body}`;
 }
 
@@ -1041,7 +1053,7 @@ function rejaHead(){
   const thu=w=>parseD(addDays(weekMon(w),3)), groups=[];
   for(const w of weeks){ const m=thu(w), key=m.getFullYear()+"-"+m.getMonth(); let g=groups[groups.length-1]; if(!g||g.key!==key){ g={key,label:cap1(MF[m.getMonth()])+(m.getFullYear()!==td.getFullYear()?" "+m.getFullYear():""),ws:[]}; groups.push(g); } g.ws.push(w); }
   let h=`<div class="rtools"><div class="seg" role="group" aria-label="Ko'rinish">${opts.map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>
-    <div class="tb wsw"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta">‹</button><button data-act="rweek" data-w="${cw}"${rw===cw?' aria-current="true"':""}>Shu hafta</button><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta">›</button></div></div>`;
+    <div class="tb wsw"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M7.5 2 2 8l5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-act="rweek" data-w="${cw}"${rw===cw?' aria-current="true"':""}>Shu hafta</button><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M2.5 2 8 8l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>`;
   h+=`<div class="wkp" role="group" aria-label="Haftalar">${groups.map(g=>`<div class="wg"><span class="wgl">${esc(g.label)}</span><div class="wgr">${g.ws.map(w=>{ const m=callsByWeek.get(w), n=m?m.size:0;
     const lbl=w===cw?"Shu hafta":n?`${n} ta qo'ng'iroq`:state.plans.has(w)?"Reja bor":"";
     return `<button class="wp${w===rw?" on":""}${w===cw?" cur":""}${w<cw?" past":""}" data-act="rweek" data-w="${w}"><b>${esc(weekRange(w))}</b><span>${lbl?esc(lbl):"&nbsp;"}</span></button>`; }).join("")}</div></div>`).join("")}</div>`;
@@ -1125,7 +1137,7 @@ function renderTolovlar(){
     return (pb.debt-pa.debt) || (order[pa.k]-order[pb.k]) || ((pa.b.paidUntil||"9").localeCompare(pb.b.paidUntil||"9")) || (a.name||"").localeCompare(b.name||""); });
   const tile=(f,col,icon,val,sub,lbl,cls)=>`<button class="card tile pt${state.pf===f?" on":""}" data-act="pfilter" data-f="${f}"><span class="ic" style="background:${col}">${icon}</span><b${cls?` class="${cls}"`:""}>${val}</b><span class="ts">${sub}</span><span>${lbl}</span></button>`;
   const yr=pm.slice(0,4);
-  let h=`<div class="ptools"><div class="tb pmsw"><button data-act="pmonth" data-n="-1" aria-label="Oldingi oy">‹</button><button data-act="pmonth" data-n="0" title="Shu oyga qaytish">${esc(mn)} ${yr}</button><button data-act="pmonth" data-n="1" aria-label="Keyingi oy">›</button></div>
+  let h=`<div class="ptools"><div class="tb pmsw"><button data-act="pmonth" data-n="-1" aria-label="Oldingi oy" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M7.5 2 2 8l5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button data-act="pmonth" data-n="0" title="Shu oyga qaytish">${esc(mn)} ${yr}</button><button data-act="pmonth" data-n="1" aria-label="Keyingi oy" class="nv"><svg viewBox="0 0 10 16" aria-hidden="true"><path d="M2.5 2 8 8l-5.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <div class="seg pseg" role="group" aria-label="Filtr">${["attn","soon","over","all","nodata"].map(k=>`<button data-act="pfilter" data-f="${k}" aria-pressed="${state.pf===k}">${esc(F[k][0])}<em>${F[k][1].length}</em></button>`).join("")}</div></div>
   <div class="stats pstats">
     ${tile("paid","var(--green)",ICON.card,esc(money(cashSum)),`${cash.length} ta to'lov${fut?" · oy hali kelmagan":""}`,`${mn}da tushgan`,"good")}
