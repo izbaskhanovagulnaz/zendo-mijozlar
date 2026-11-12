@@ -404,6 +404,23 @@ form.list{display:flex;flex-direction:column;gap:14px}
 }
 @media (min-width:900px) and (max-width:1279px){ .pstats{grid-template-columns:1fr 1fr} }
 @media (max-width:899px){ .pt b{font-size:18px!important;white-space:normal;line-height:1.15} .pt b.bad,.pt b{word-break:keep-all} }
+/* reja: 7 days + weeks */
+.rtools{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.wnav{display:flex;align-items:center;gap:6px;margin-left:auto} .wnav b{font-size:15px;min-width:120px;text-align:center}
+.wnav button{width:32px;height:32px;border-radius:9px;background:var(--card);box-shadow:var(--shadow);font-size:18px;color:var(--accent)}
+.days.d7 .day{min-width:118px}
+.day.tdy .dt b{color:var(--red-x)}
+.wks{display:flex;gap:8px;overflow-x:auto;padding:0 2px 16px;scrollbar-width:none}
+.wk2{flex:none;min-width:112px;text-align:left;padding:8px 12px;border-radius:12px;background:var(--fill);display:flex;flex-direction:column;gap:1px}
+.wk2 small{font-size:11.5px;color:var(--ink2);font-weight:600} .wk2 b{font:600 15px var(--round)} .wk2 span{font-size:12px;color:var(--ink2)}
+.wk2.cur small{color:var(--red-x)}
+.wk2.on{background:var(--accent);color:var(--on-accent)} .wk2.on small,.wk2.on span{color:var(--on-accent);opacity:.85}
+@media (min-width:900px){
+  .days.d7{grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;padding-bottom:12px}
+  .days.d7 .day{min-width:0;padding:10px 12px;gap:10px} .days.d7 .ring.sm{width:42px;height:42px} .days.d7 .ring.sm .rv{font-size:11px} .days.d7 .day .dt b{font-size:14px}
+  .wks{flex-wrap:wrap;overflow:visible}
+}
+@media (min-width:900px) and (max-width:1279px){ .days.d7 .ring.sm{display:none} }
 </style>
 </head>
 <body class="auth">
@@ -504,7 +521,14 @@ function clientForCall(call){
   return null;
 }
 function eventsOn(day){ return [...state.events.values()].filter(e=>e.date===day).sort((a,b)=>(a.time||"99").localeCompare(b.time||"99")); }
-function callsFor(day){ return [...state.calls.values()].filter(c=>!day||c.day===day).sort((a,b)=>(a.day||"").localeCompare(b.day||"")||(a.ord||0)-(b.ord||0)); }
+function isoWeek(s){ const d=parseD(s); d.setDate(d.getDate()-((d.getDay()+6)%7)+3); const y=d.getFullYear(), j4=new Date(y,0,4); return y+"-W"+pad(1+Math.round(((d-j4)/86400000-3+((j4.getDay()+6)%7))/7)); }
+function weekMon(w){ const [y,n]=String(w).split("-W").map(Number), j4=new Date(y,0,4); return dstr(new Date(y,0,4-((j4.getDay()+6)%7)+(n-1)*7)); }
+const weekDays=w=>{ const m=weekMon(w); return [...Array(7)].map((_,i)=>addDays(m,i)); };
+const weekShift=(w,n)=>isoWeek(addDays(weekMon(w),7*n));
+function weekRange(w){ const d=weekDays(w), a=parseD(d[0]), z=parseD(d[6]); return a.getMonth()===z.getMonth() ? `${a.getDate()}–${z.getDate()}.${pad(z.getMonth()+1)}` : `${a.getDate()}.${pad(a.getMonth()+1)}–${z.getDate()}.${pad(z.getMonth()+1)}`; }
+const viewPlan=()=>state.plans.get(state.rweek) || (state.plan&&state.plan.week===state.rweek?state.plan:null);
+state.plans=new Map(); state.curWeek=isoWeek(todayStr()); state.rweek=state.curWeek;
+function callsFor(day){ return [...state.calls.values()].filter(c=>day?c.day===day:c.week===state.rweek).sort((a,b)=>(a.day||"").localeCompare(b.day||"")||(a.ord||0)-(b.ord||0)); }
 function counts(list){ const r={total:list.length,done:0,kot:0,kut:0,muammo:0,tolov:0,zoom:0}; for(const c of list){const s=c.st||"kut"; if(DONE.has(s)) r.done++; if(s in r) r[s]++;} return r; }
 
 /* ---------- render: shared pieces ---------- */
@@ -795,21 +819,20 @@ function summaryHTML(list){
   <div class="bar" aria-hidden="true"><i style="width:${pct(c.tolov+c.zoom)};background:var(--purple)"></i><i style="width:${pct(Math.max(other,0))};background:var(--green)"></i><i style="width:${pct(c.muammo)};background:var(--red)"></i><i style="width:${pct(c.kot)};background:var(--orange)"></i></div>`;
 }
 function blocksCard(){
-  const blocks=((state.plan&&state.plan.blocks)||[]).map((b,i)=>({...b,i})).filter(b=>b.day===state.day);
+  const vp=viewPlan(); const blocks=((vp&&vp.blocks)||[]).map((b,i)=>({...b,i})).filter(b=>b.day===state.day);
   return `<div class="card"><div class="ct"><h3>Kun jadvali</h3></div>${blocks.length?blocks.map(b=>`<label class="blk${b.done?" dn":""}" for="bk-${b.i}"><input type="checkbox" id="bk-${b.i}" data-act="block" data-i="${b.i}" ${b.done?"checked":""}><span><time>${esc(b.time)}</time><b>${esc(b.title)}</b><span>${esc(b.text)}</span></span></label>`).join(""):`<p class="empty sm">Bu kunga blok yo'q.</p>`}</div>`;
 }
 function rulesCard(){
-  const r=(state.plan&&state.plan.rules)||[];
+  const vp=viewPlan(); const r=(vp&&vp.rules)||[];
   return r.length?`<div class="card"><div class="ct"><h3>Qoidalar</h3></div><ul class="rule">${r.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`:"";
 }
 function renderReja(){
-  if(!state.plan) return `<p class="empty">Haftalik reja hali yozilmagan. Claude'dan «keyingi hafta rejasini tuz» deb so'rang.</p>`;
   const wide=isWide(); let v=state.rejaView; if(wide && v==="jadval") v=state.rejaView="kun";
   const sel=wide&&state.open?state.calls.get(state.open):null;
   const selCard=sel?`<div class="card">${callDetail(sel)}</div>`:"";
   if(v==="kun"){
     const list=callsFor(state.day);
-    const left=list.length?`<div class="card">${callsCard(list)}</div>`:`<p class="empty">Bu kunga qo'ng'iroq yo'q.</p>`;
+    const left=list.length?`<div class="card">${callsCard(list)}</div>`:`<div class="card"><p class="empty">${callsFor(null).length?"Bu kunga qo'ng'iroq yo'q.":`Bu haftaga reja hali tuzilmagan. «+ Qo'ng'iroq» bilan qo'shing yoki Claude'dan «${esc(weekRange(state.rweek))} haftasi rejasini tuz» deb so'rang.`}</p></div>`;
     if(wide) return `<div class="rj">${left}<div class="col">${selCard}${blocksCard()}${rulesCard()}</div></div>`;
     return (list.length?summaryHTML(list):"")+left;
   }
@@ -824,7 +847,7 @@ function renderReja(){
   let body="";
   if(!list.length) body=`<p class="empty">Hech narsa topilmadi.</p>`;
   else{
-    const labels=Object.fromEntries((state.plan.days||[]).map(d=>[d.id,d.label]));
+    const labels=Object.fromEntries(weekDays(state.rweek).map(d=>[d,dFull(d)]));
     let cur=null; body=`<div class="card">`;
     for(const c of list){ if(c.day!==cur){ cur=c.day; body+=`<div class="rs"><span class="cap">${esc(labels[c.day]||c.day)}</span></div>`; } body+=callRow(c); }
     body+=`</div>`;
@@ -834,12 +857,18 @@ function renderReja(){
 function rejaHead(){
   const wide=isWide(); let v=state.rejaView; if(wide && v==="jadval") v="kun";
   const opts=wide?[["kun","Ro'yxat"],["hammasi","Butun hafta"]]:[["kun","Ro'yxat"],["jadval","Jadval"],["hammasi","Butun hafta"]];
-  let h=`<div class="rtools"><div class="seg" role="group" aria-label="Ko'rinish">${opts.map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div></div>`;
-  if(state.plan && v!=="hammasi"){
-    const t=todayStr();
-    h+=`<div class="days">${(state.plan.days||[]).map(d=>{ const c=counts(callsFor(d.id)), dd=parseD(d.id);
-      return `<button class="card day" data-act="rday" data-day="${esc(d.id)}" aria-pressed="${d.id===state.day}"><span class="ring sm">${ring(c.done,c.total,11)}<span class="rv">${c.done}/${c.total}</span></span><span class="dt"><b>${WDF[dd.getDay()]} ${dd.getDate()}</b><span>${d.id===t?"Bugun":esc(dLabel(d.id))}</span></span></button>`; }).join("")}</div>`;
+  const t=todayStr(), cw=state.curWeek, rw=state.rweek;
+  const wl=w=>w===cw?"Shu hafta":w===weekShift(cw,1)?"Keyingi hafta":w===weekShift(cw,-1)?"O'tgan hafta":cap1(MF[parseD(weekMon(w)).getMonth()]);
+  const weeks=[-1,0,1,2,3,4].map(n=>weekShift(cw,n));
+  if(!weeks.includes(rw)) weeks.push(rw);
+  let h=`<div class="rtools"><div class="seg" role="group" aria-label="Ko'rinish">${opts.map(([k,l])=>`<button data-act="rview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>
+    <div class="wnav"><button data-act="rweekshift" data-n="-1" aria-label="Oldingi hafta">‹</button><b>${esc(cap1(MF[parseD(weekMon(rw)).getMonth()]))} · ${esc(weekRange(rw))}</b><button data-act="rweekshift" data-n="1" aria-label="Keyingi hafta">›</button></div></div>`;
+  if(v!=="hammasi"){
+    h+=`<div class="days d7">${weekDays(rw).map(d=>{ const c=counts(callsFor(d)), dd=parseD(d);
+      return `<button class="card day${d===t?" tdy":""}" data-act="rday" data-day="${d}" aria-pressed="${d===state.day}"><span class="ring sm">${ring(c.done,c.total,11)}<span class="rv">${c.total?c.done+"/"+c.total:"–"}</span></span><span class="dt"><b>${WD[dd.getDay()]} ${dd.getDate()}</b><span>${d===t?"Bugun":c.total?c.total+" ta":"bo'sh"}</span></span></button>`; }).join("")}</div>`;
   }
+  h+=`<div class="wks" role="group" aria-label="Haftalar">${weeks.map(w=>{ const loaded=callsByWeek.has(w), c=loaded?counts([...callsByWeek.get(w).values()]):null, hasPlan=state.plans.has(w);
+    return `<button class="wk2${w===rw?" on":""}${w===cw?" cur":""}" data-act="rweek" data-w="${w}"><small>${esc(wl(w))}</small><b>${esc(weekRange(w))}</b><span>${c&&c.total?`${c.done}/${c.total} qo'ng'iroq`:hasPlan?"Reja bor":"Reja yo'q"}</span></button>`; }).join("")}</div>`;
   return h;
 }
 
@@ -1042,13 +1071,12 @@ function openClientForm(){
   setTimeout(()=>$("#n-name").focus(),50);
 }
 function openCallForm(){
-  if(!state.plan) return;
   state.sheet={kind:"newcall"}; $("#ov").hidden=false; $("#sheet").className="sheet";
   $("#sheet").innerHTML=`
     <div class="sheet-top"><h2>Rejaga qo'ng'iroq qo'shish</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
     <form id="callForm" class="list" novalidate>
       <div><label class="lbl" for="f-name">Klinika nomi <span class="req">*</span></label><input class="f" id="f-name" autocomplete="off"></div>
-      <div class="two"><div><label class="lbl" for="f-phone">Telefon</label><input class="f" id="f-phone" inputmode="tel"></div><div><label class="lbl" for="f-day">Qaysi kun</label><select class="f" id="f-day">${(state.plan.days||[]).map(d=>`<option value="${esc(d.id)}"${d.id===state.day?" selected":""}>${esc(d.label)}</option>`).join("")}</select></div></div>
+      <div class="two"><div><label class="lbl" for="f-phone">Telefon</label><input class="f" id="f-phone" inputmode="tel"></div><div><label class="lbl" for="f-day">Qaysi kun</label><select class="f" id="f-day">${weekDays(state.rweek).map(d=>`<option value="${d}"${d===state.day?" selected":""}>${esc(dFull(d))}</option>`).join("")}</select></div></div>
       <div><label class="lbl" for="f-grp">Guruh</label><select class="f" id="f-grp">${Object.entries(GROUPS).filter(([k])=>k!=="qayta").map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>
       <div><label class="lbl" for="f-task">Nima qilish kerak</label><input class="f" id="f-task"></div>
       <div class="err" id="f-err"></div>
@@ -1085,7 +1113,7 @@ function doRender(){
     : state.tab==="kalendar" ? `${cap1(MF[cd.getMonth()])} ${cd.getFullYear()}`
     : state.tab==="mijozlar" ? `${state.clients.size} ta klinika`
     : state.tab==="tolovlar" ? `${dLabel(t)} holatiga`
-    : state.plan ? `${state.plan.weekLabel||""} · ${counts(callsFor(null)).done} / ${state.calls.size} bajarildi` : "";
+    : `${weekRange(state.rweek)} · ${counts(callsFor(null)).done} / ${callsFor(null).length} bajarildi`;
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
   const fab=$("#fab"); fab.hidden=!state.db || state.tab==="tolovlar";
@@ -1093,6 +1121,7 @@ function doRender(){
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
+  for(const q of [".days.d7 [aria-pressed=\"true\"]",".wks .wk2.on"]){ const el=document.querySelector(q); if(el&&el.parentElement.scrollWidth>el.parentElement.clientWidth) el.parentElement.scrollLeft=Math.max(0,el.offsetLeft-el.parentElement.offsetLeft-16); }
   const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
 }
 
@@ -1162,7 +1191,7 @@ document.addEventListener("click", async e=>{
     case "gomonth": state.calDay=b.dataset.day; state.calView="month"; doRender(); return;
     case "monthnew": state.calDay=b.dataset.day; openEventForm({date:b.dataset.day}); return;
     case "calmonth": { const d=parseD(state.calDay||todayStr()); state.calDay=dstr(new Date(d.getFullYear(), d.getMonth()+Number(b.dataset.n), 1)); doRender(); return; }
-    case "sideday": state.tab="reja"; state.rejaView="kun"; state.day=b.dataset.day; state.open=null; doRender(); window.scrollTo({top:0}); return;
+    case "sideday": state.tab="reja"; state.rejaView="kun"; state.day=b.dataset.day; state.rweek=isoWeek(b.dataset.day); syncWeekSubs(); state.open=null; doRender(); window.scrollTo({top:0}); return;
     case "focusnote": { const f=$("#h-text"); if(f){ f.scrollIntoView({block:"center"}); f.focus(); } return; }
     case "gridnew": {
       const r=b.getBoundingClientRect(); const hh=Math.min(H1-1, Math.max(H0, H0+Math.floor((e.clientY-r.top)/HH*2)/2));
@@ -1173,6 +1202,11 @@ document.addEventListener("click", async e=>{
     case "goreja": state.tab="reja"; state.rejaView="kun"; state.day=todayStr(); doRender(); return;
     case "rview": state.rejaView=b.dataset.v; state.open=null; doRender(); return;
     case "rday": state.day=b.dataset.day; state.open=null; doRender(); return;
+    case "rweek": case "rweekshift": {
+      const w = act==="rweek" ? b.dataset.w : weekShift(state.rweek, Number(b.dataset.n));
+      state.rweek=w; state.open=null; const days=weekDays(w); state.day=days.includes(todayStr())?todayStr():days[0];
+      syncWeekSubs(); doRender(); return;
+    }
     case "calday": state.calDay=b.dataset.day; doRender(); return;
     case "calshift": state.calDay=addDays(state.calDay||todayStr(), Number(b.dataset.n)); doRender(); return;
     case "cfilter": state.cf=b.dataset.f; doRender(); return;
@@ -1196,9 +1230,11 @@ document.addEventListener("click", async e=>{
     case "st": { const c=state.calls.get(id); if(c && c.st!==b.dataset.st){ await writeCall(id,{st:b.dataset.st}); doRender(); syncCallHistory(id); } return; }
     case "callzoom": { const c=state.calls.get(id); const cl=c?clientForCall(c):null; openEventForm({clientId:cl?cl.id:null, type:"zoom", title:c?`Zoom: ${c.name}`:"", date:addDays(todayStr(),1)}); return; }
     case "next": {
-      const c=state.calls.get(id); const days=(state.plan.days||[]).map(d=>d.id); const i=days.indexOf(c.day);
-      if(i>=0 && i<days.length-1){ const nd=days[i+1]; const maxOrd=Math.max(0,...[...state.calls.values()].filter(x=>x.day===nd).map(x=>x.ord||0)); writeCall(id,{day:nd, ord:maxOrd+1}); state.open=null; doRender(); }
-      else setNotice("Bu haftaning oxirgi kuni. Keyingi hafta rejasiga Claude qo'shib beradi.");
+      const c=state.calls.get(id); if(!c) return;
+      const nd=addDays(c.day||todayStr(),1), nw=isoWeek(nd); const maxOrd=Math.max(0,...[...state.calls.values()].filter(x=>x.day===nd).map(x=>x.ord||0));
+      writeCall(id,{day:nd, week:nw, ord:maxOrd+1}); state.open=null;
+      if(nw!==c.week) setNotice(`«${c.name}» keyingi haftaga (${weekRange(nw)}) o'tkazildi.`);
+      doRender();
       return;
     }
     case "del": {
@@ -1215,9 +1251,10 @@ document.addEventListener("change", e=>{
   const t=e.target;
   if(t.id==="p-ext"||t.id==="p-mon"||t.id==="p-date"){ payPreview(); return; }
   if(t.id==="e-time"){ const en=$("#e-end"), a=tmin(t.value); if(en && a!=null && (!en.value || tmin(en.value)<=a)) en.value=minToT(Math.min(a+60,23*60+59)); return; }
-  if(t.dataset.act==="block" && state.plan && state.db){
-    const blocks=state.plan.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
-    state.plan={...state.plan, blocks}; state.db.doc("meta/plan").update({blocks}).catch(er=>setNotice(failMsg(er))); doRender(); return;
+  if(t.dataset.act==="block" && viewPlan() && state.db){
+    const vp=viewPlan(); const blocks=vp.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
+    state.plans.set(vp.week,{...vp,blocks}); if(state.plan&&state.plan.week===vp.week) state.plan={...state.plan, blocks};
+    state.db.doc("plans/"+vp.week).update({blocks}).catch(er=>setNotice(failMsg(er))); doRender(); return;
   }
   if(t.dataset.cfield && curClient()){
     const f=t.dataset.cfield; let v=t.value.trim(); if(f==="users") v=v?Number(v.replace(/\D/g,""))||null:null;
@@ -1319,7 +1356,7 @@ document.addEventListener("submit", async e=>{
   if(f.id==="callForm"){
     const name=$("#f-name").value.trim(); if(!name){ $("#f-err").textContent="Klinika nomini yozing."; return; }
     const day=$("#f-day").value; const maxOrd=Math.max(0,...[...state.calls.values()].filter(x=>x.day===day).map(x=>x.ord||0));
-    const data={week:state.plan.week, day, who:"siz", ord:maxOrd+1, name, grp:$("#f-grp").value, task:$("#f-task").value.trim(), st:"kut", phone:$("#f-phone").value.trim(), added:true, createdAt:new Date().toISOString()};
+    const data={week:isoWeek(day), day, who:"siz", ord:maxOrd+1, name, grp:$("#f-grp").value, task:$("#f-task").value.trim(), st:"kut", phone:$("#f-phone").value.trim(), added:true, createdAt:new Date().toISOString()};
     const id=uid("u");
     try{ await state.db.doc("calls/"+id).set(data); state.calls.set(id,{id,...data}); closeSheet(); state.tab="reja"; state.rejaView="kun"; state.day=day; state.open=id; doRender(); const card=document.getElementById("card-"+id); if(card) card.scrollIntoView({block:"center"}); }
     catch(er){ $("#f-err").textContent=failMsg(er); }
@@ -1358,6 +1395,7 @@ function fromRow(table,row){
 function parsePath(path){
   const p=path.split("/");
   if(p[0]==="meta" && p[1]==="plan") return {table:"plans", plan:true};
+  if(p[0]==="plans") return {table:"plans", id:p[1], key:"week"};
   if(p[0]==="clients" && p[2]==="history") return {table:"history", id:p[3], parent:p[1]};
   return {table:p[0], id:p[1]};
 }
@@ -1382,11 +1420,11 @@ function makeDb(sb){
         }
       };
     }
-    const base=()=>{ let r={id:P.id}; if(P.parent) r.client_id=P.parent; return r; };
+    const K=P.key||"id"; const base=()=>{ let r={[K]:P.id}; if(P.parent) r.client_id=P.parent; return r; };
     return {
       set: async data=>chk(await sb.from(P.table).upsert({...toRow(P.table,data), ...base()})),
-      update: async patch=>{ const row=toRow(P.table,patch); if(!Object.keys(row).length) return; chk(await sb.from(P.table).update(row).eq("id",P.id)); },
-      delete: async ()=>chk(await sb.from(P.table).delete().eq("id",P.id))
+      update: async patch=>{ const row=toRow(P.table,patch); if(!Object.keys(row).length) return; chk(await sb.from(P.table).update(row).eq(K,P.id)); },
+      delete: async ()=>chk(await sb.from(P.table).delete().eq(K,P.id))
     };
   }
   function collection(path){
@@ -1400,7 +1438,7 @@ function makeDb(sb){
             let q=sb.from(P.table).select("*").limit(5000);
             for(const [f,v] of filters) q=q.eq(f,v);
             const rows=chk(await q);
-            cb({docs:rows.map(r=>({id:r.id, data:()=>{ const o=fromRow(P.table,r); delete o.id; return o; }}))});
+            cb({docs:rows.map(r=>({id:r.id??r.week, data:()=>{ const o=fromRow(P.table,r); delete o.id; return o; }}))});
           }catch(e){ err&&err(e); }
         };
         run();
@@ -1413,13 +1451,23 @@ function makeDb(sb){
   return {doc, collection};
 }
 
-let unsubCalls=null;
-function subscribeCalls(week){
-  if(unsubCalls) unsubCalls();
-  unsubCalls=state.db.collection("calls").where("week","==",week).onSnapshot(snap=>{
-    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.calls=m; render();
+const callSubs=new Map(), callsByWeek=new Map();
+function rebuildCalls(){ const m=new Map(); for(const mm of callsByWeek.values()) for(const [k,v] of mm) m.set(k,v); state.calls=m; }
+function watchWeek(w){
+  if(!w||callSubs.has(w)||!state.db) return;
+  callSubs.set(w,null);
+  const u=state.db.collection("calls").where("week","==",w).onSnapshot(snap=>{
+    if(!callSubs.has(w)) return;
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); callsByWeek.set(w,m); rebuildCalls(); render();
   }, ()=>setNotice("Qo'ng'iroqlar rejasini o'qib bo'lmadi."));
+  if(callSubs.has(w)) callSubs.set(w,u); else u();
 }
+function syncWeekSubs(){
+  const keep=new Set([state.curWeek, state.plan&&state.plan.week, state.rweek, weekShift(state.curWeek,1)].filter(Boolean));
+  for(const [w,u] of [...callSubs]) if(!keep.has(w)){ callSubs.delete(w); callsByWeek.delete(w); if(u) u(); }
+  keep.forEach(watchWeek); rebuildCalls();
+}
+function subscribeCalls(){ syncWeekSubs(); }
 function startData(db){
   document.body.classList.remove("auth");
   const timer=setTimeout(()=>setNotice("Ma'lumotlarga hali ulanib bo'lmadi. Internetni tekshiring, sahifa o'zi qayta urinadi."),10000);
@@ -1428,10 +1476,14 @@ function startData(db){
     clearTimeout(timer); setNotice("");
     if(!snap.exists){ state.plan=null; render(); return; }
     const p=snap.data(); const changed=!state.plan||state.plan.week!==p.week; state.plan=p;
-    const ids=(p.days||[]).map(d=>d.id); if(!state.day||!ids.includes(state.day)){ const t=todayStr(); state.day=ids.includes(t)?t:(ids.find(d=>d>t)||ids[0]); }
+    if(!state.day) state.day=todayStr();
     if(changed) subscribeCalls(p.week);
     render();
   }, ()=>{ clearTimeout(timer); setNotice("Rejani o'qib bo'lmadi."); });
+  db.collection("plans").onSnapshot(snap=>{
+    const m=new Map(); for(const d of snap.docs) m.set(d.id,{...d.data(), week:d.id}); state.plans=m; render();
+  }, ()=>{});
+  syncWeekSubs();
   db.collection("clients").onSnapshot(snap=>{
     clearTimeout(timer);
     const m=new Map(); for(const d of snap.docs) m.set(d.id,{id:d.id,...d.data()}); state.clients=m; render();
