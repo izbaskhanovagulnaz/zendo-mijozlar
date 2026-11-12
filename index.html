@@ -1245,7 +1245,7 @@ function openQuick(){
       <textarea class="f" id="q-text" placeholder="Masalan: Sergo bilan gaplashdim, yillik to'lovga rozi. Ertaga soat 11 da havola yuboraman. Prestige'da SMS kelmayapti, juma kuni qayta qo'ng'iroq qilaman. Mega stom 6 oyga 2 880 000 to'ladi."></textarea>
       <div class="qbar">
         <button type="button" class="mic" id="q-mic" data-act="qmic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>${SR?"Gapirish":"Diktovka"}</span></button>
-        ${SR?`<select class="f inl2" id="q-lang" aria-label="Til"><option value="uz-UZ">O'zbekcha</option><option value="ru-RU">Ruscha</option></select>`:""}
+        ${SR?`<select class="f inl2" id="q-lang" aria-label="Til">${[["uz-UZ","O'zbekcha"],["ru-RU","Ruscha"]].map(([v,l])=>`<option value="${v}"${qLang()===v?" selected":""}>${l}</option>`).join("")}</select>`:""}
         <span class="hint" id="q-st" style="margin:0;flex:1">${SR?"":"Mac: Fn (🌐) tugmasini ikki marta bosing. iPhone: klaviaturadagi 🎙."}</span>
       </div>
     </div>
@@ -1253,18 +1253,35 @@ function openQuick(){
   setTimeout(()=>{ const f=$("#q-text"); if(f) f.focus(); },60);
 }
 let qRec=null;
+const qLang=()=>{ try{ return localStorage.getItem("zq-lang")||"uz-UZ"; }catch(_){ return "uz-UZ"; } };
+function qMicReset(msg){
+  const r=qRec; qRec=null;
+  if(r){ r.onend=null; r.onerror=null; r.onresult=null; try{ r.abort(); }catch(_){} }
+  const btn=$("#q-mic"); if(btn){ btn.classList.remove("on"); btn.querySelector("span").textContent="Gapirish"; }
+  if(msg!=null && $("#q-st")) $("#q-st").textContent=msg;
+}
 function qMic(){
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition, ta=$("#q-text"), btn=$("#q-mic"), st=$("#q-st");
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition, ta=$("#q-text"), btn=$("#q-mic"), st=$("#q-st"), sel=$("#q-lang");
   if(!SR){ ta.focus(); st.textContent=/Mac/.test(navigator.platform)?"Matn maydoni tayyor. Fn (🌐) tugmasini ikki marta bosib gapiring — Mac diktovkasi shu yerga yozadi.":"Klaviaturadagi 🎙 tugmasini bosib gapiring."; return; }
-  if(qRec){ qRec.stop(); return; }
+  if(qRec){ const r=qRec; try{ r.stop(); }catch(_){} setTimeout(()=>{ if(qRec===r) qMicReset(""); qRun(); },700); btn.classList.remove("on"); btn.querySelector("span").textContent="Gapirish"; return; }
+  let r;
   try{
-    qRec=new SR(); qRec.lang=($("#q-lang")||{}).value||"uz-UZ"; qRec.continuous=true; qRec.interimResults=true;
+    r=new SR(); qRec=r; r.lang=(sel&&sel.value)||qLang(); r.continuous=true; r.interimResults=true;
     const base=ta.value?ta.value.replace(/\s*$/," "):"";
-    qRec.onresult=e=>{ let fin="",tmp=""; for(const r of e.results) r.isFinal?(fin+=r[0].transcript.trim()+". "):(tmp+=r[0].transcript); ta.value=base+fin+tmp; };
-    qRec.onerror=e=>{ st.textContent=e.error==="not-allowed"?"Mikrofonga ruxsat berilmadi.":(e.error==="language-not-supported"||e.error==="service-not-allowed")?"Bu til diktovkada yo'q. Ruschani tanlang yoki Fn ikki marta bosing.":"Mikrofon ishlamadi ("+e.error+"). Fn ikki marta bosib ko'ring."; };
-    qRec.onend=()=>{ qRec=null; btn.classList.remove("on"); btn.querySelector("span").textContent="Gapirish"; if(!/ishlamadi|ruxsat|yo'q/.test(st.textContent)) st.textContent=""; qRun(); };
-    qRec.start(); btn.classList.add("on"); btn.querySelector("span").textContent="To'xtatish"; st.textContent="Eshityapman…";
-  }catch(e){ qRec=null; st.textContent="Mikrofon ishlamadi. Fn (🌐) ikki marta bosib ko'ring."; }
+    r.onresult=e=>{ let fin="",tmp=""; for(const x of e.results) x.isFinal?(fin+=x[0].transcript.trim()+". "):(tmp+=x[0].transcript); ta.value=base+fin+tmp; };
+    r.onerror=e=>{
+      if(e.error==="no-speech"||e.error==="aborted") return;
+      let msg;
+      if(e.error==="not-allowed") msg="Mikrofonga ruxsat berilmadi. Tizim sozlamalarida ruxsat bering yoki Fn (🌐) ikki marta bosing.";
+      else if(e.error==="language-not-supported"||e.error==="service-not-allowed"||e.error==="network"){
+        if(sel && sel.value==="uz-UZ"){ sel.value="ru-RU"; try{ localStorage.setItem("zq-lang","ru-RU"); }catch(_){} msg="O'zbek tili bu yerda tanilmaydi — Ruschaga o'tkazdim. Yana «Gapirish»ni bosing yoki Fn (🌐) ikki marta bosing."; }
+        else msg="Mikrofon bu yerda ishlamadi. Fn (🌐) tugmasini ikki marta bosib gapiring.";
+      } else msg="Mikrofon ishlamadi ("+e.error+"). Fn (🌐) ikki marta bosib ko'ring.";
+      qMicReset(msg);
+    };
+    r.onend=()=>{ if(qRec===r) qMicReset(""); qRun(); };
+    r.start(); btn.classList.add("on"); btn.querySelector("span").textContent="To'xtatish"; st.textContent="Eshityapman…";
+  }catch(e){ qMicReset("Mikrofon ishlamadi. Fn (🌐) ikki marta bosib ko'ring."); }
 }
 function qRun(){ const ta=$("#q-text"); if(!ta) return; state.qacts=qParse(ta.value); qRender(); }
 function qClientInput(a,i){
@@ -1346,6 +1363,7 @@ function openClient(id){
   state.sheet={kind:"client", id}; $("#ov").hidden=false; subscribeHistory(id); renderClientSheet(id); $("#sheet").scrollTop=0;
 }
 function closeSheet(){
+  if(typeof qRec!=="undefined" && qRec) qMicReset(null);
   const was=state.sheet; $("#ov").hidden=true; state.sheet=null;
   if(was&&was.kind==="client"){ if(state.histUnsub){ state.histUnsub(); state.histUnsub=null; } state.histFor=null; }
   if(state.pendingRender) doRender();
@@ -1647,6 +1665,7 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidde
 document.addEventListener("change", e=>{
   const t=e.target;
   if(t.id==="p-ext"||t.id==="p-mon"||t.id==="p-date"){ payPreview(); return; }
+  if(t.id==="q-lang"){ try{ localStorage.setItem("zq-lang",t.value); }catch(_){} if(qRec) qMicReset(""); return; }
   if(t.dataset&&t.dataset.qi!=null){ qSet(t); if(t.dataset.qf==="on"||t.dataset.qf==="client") qRender(); return; }
   if(t.id==="e-time"){ const en=$("#e-end"), a=tmin(t.value); if(en && a!=null && (!en.value || tmin(en.value)<=a)) en.value=minToT(Math.min(a+60,23*60+59)); return; }
   if(t.dataset.act==="block" && viewPlan() && state.db){
