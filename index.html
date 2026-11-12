@@ -648,7 +648,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
 
 <div class="overlay" id="ov" hidden><div class="sheet" id="sheet"></div></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="vendor/supabase.min.js"></script>
 <script>
 /* ---------- constants ---------- */
 const STATUSES = [
@@ -2133,9 +2133,27 @@ async function afterLogin(sb, session){
   }
   startData(makeDb(sb));
 }
-(async function init(){
-  if(!window.supabase){ $("#main").innerHTML=`<p class="empty">Kutubxona yuklanmadi. Internetni tekshirib sahifani yangilang.</p>`; return; }
-  const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+/* ---------- startup: never hang on «Yuklanmoqda…» ---------- */
+const withTimeout=(p,ms,what)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(what+" javob bermadi ("+Math.round(ms/1000)+" s)")),ms))]);
+function loadScript(src,ms){ return withTimeout(new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Yuklanmadi: "+src)); document.head.appendChild(s); }),ms,"Kutubxona"); }
+function bootFail(err){
+  if(state.db) return;
+  $("#main").innerHTML=`<div class="empty"><p>Ilova ochilmadi.</p><p class="hint" style="margin:8px 0 16px">${esc(err&&err.message||String(err))}</p>
+    <div class="actions" style="justify-content:center;flex-wrap:wrap"><button class="primary" type="button" id="b-retry">Qayta urinish</button><button class="ghost" type="button" id="b-reset">Keshni tozalab qayta kirish</button></div></div>`;
+  $("#b-retry").onclick=()=>location.reload();
+  $("#b-reset").onclick=async()=>{
+    try{ Object.keys(localStorage).filter(k=>k.startsWith("sb-")).forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    try{ if(window.caches) for(const k of await caches.keys()) await caches.delete(k); }catch(e){}
+    try{ if(navigator.serviceWorker) for(const r of await navigator.serviceWorker.getRegistrations()) await r.unregister(); }catch(e){}
+    location.reload();
+  };
+}
+(async function init(){ try{
+  $("#main").innerHTML=`<p class="empty">Yuklanmoqda…</p>`;
+  if(!window.supabase){ try{ await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js",10000); }catch(e){} }
+  if(!window.supabase) throw new Error("Kutubxona yuklanmadi. Internetni tekshiring.");
+  // no-op lock: navigator.locks can deadlock in iOS home-screen apps
+  const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,lock:async(name,acq,fn)=>await fn()}});
   window._sb=sb;
   document.addEventListener("click", async e=>{ const b=e.target.closest('[data-act="logout"]'); if(b){ await sb.auth.signOut(); location.reload(); } });
   document.addEventListener("click", async e=>{
@@ -2155,9 +2173,9 @@ async function afterLogin(sb, session){
     if(error){ $("#l-err").textContent="Kirib bo'lmadi: "+error.message; return; }
     afterLogin(sb,data.session);
   }, true);
-  const {data:{session}}=await sb.auth.getSession();
-  if(session) afterLogin(sb,session); else showLogin();
-})();
+  const {data:{session}}=await withTimeout(sb.auth.getSession(),12000,"Kirish tekshiruvi");
+  if(session) await withTimeout(afterLogin(sb,session),15000,"Server"); else showLogin();
+} catch(err){ console.error(err); bootFail(err); } })();
 if("serviceWorker" in navigator){ let rl=false; navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(rl) return; rl=true; const a=document.activeElement; if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))) location.reload(); }); }
 if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{}));
 </script>
