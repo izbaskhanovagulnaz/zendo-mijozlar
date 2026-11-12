@@ -384,6 +384,26 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .mn.td{background:var(--red);color:#fff}
 .ygrid .mg .s{background:var(--red);color:#fff}
 .me2 .dot{background:var(--c)!important}
+/* to'lovlar */
+.pstats{grid-template-columns:1fr 1fr}
+.pt{text-align:left;min-height:0} .pt b{font-size:22px!important;white-space:nowrap} .pt .ts{font-size:12px!important;color:var(--ink2)} .pt>span:last-child{color:var(--ink);font-weight:600;font-size:13px;margin-top:2px}
+.pt.on{box-shadow:0 0 0 2px var(--accent),var(--shadow)}
+.pchips{padding:14px 14px 10px!important}
+.thd{display:none}
+.tr{cursor:pointer} .tr::before{left:66px!important} .tr .pill{flex:none}
+.pc{display:none;width:130px;text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap} .pc small{display:block;font-weight:400;color:var(--ink2);font-size:12px}
+.dbt{font-style:normal;color:var(--red-x);font-weight:600}
+.chkl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14.5px;font-weight:500}
+.chkl input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)} .inl2{width:auto;display:inline-block;min-height:36px;padding:6px 30px 6px 10px}
+@media (min-width:900px){
+  .pstats{grid-template-columns:repeat(4,1fr)} .pt b{font-size:26px!important}
+  .pc{display:block} .tr:hover{background:var(--fill)}
+  .thd{display:flex;gap:12px;padding:6px 20px 8px 68px;border-top:.5px solid var(--sep);font-size:11.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+  .thd span:first-child{flex:1} .thd span:nth-child(2){width:110px} .thd .pc{display:block;width:130px;margin-right:19px}
+  .tr .pill{width:110px;text-align:center}
+}
+@media (min-width:900px) and (max-width:1279px){ .pstats{grid-template-columns:1fr 1fr} }
+@media (max-width:899px){ .pt b{font-size:18px!important;white-space:normal;line-height:1.15} .pt b.bad,.pt b{word-break:keep-all} }
 </style>
 </head>
 <body class="auth">
@@ -393,6 +413,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
     <button class="nav" data-tab="bugun" aria-pressed="true"><span class="ic" style="background:#ff9500"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.400 1.400M17.600 17.600 19 19M5 19l1.400-1.400M17.600 6.400 19 5"/></svg></span>Bugun<em id="n-bugun"></em></button>
     <button class="nav" data-tab="kalendar" aria-pressed="false"><span class="ic" style="background:#ff3b30"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>Kalendar<em id="n-kalendar"></em></button>
     <button class="nav" data-tab="mijozlar" aria-pressed="false"><span class="ic" style="background:#007aff"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4.200"/><path d="M3.500 21c.6-4.600 4-7 8.500-7s7.900 2.400 8.500 7z"/></svg></span>Mijozlar<em id="n-mijozlar"></em></button>
+    <button class="nav" data-tab="tolovlar" aria-pressed="false"><span class="ic" style="background:#34c759"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M6 15h4"/></svg></span>To'lovlar<em id="n-tolovlar"></em></button>
     <button class="nav" data-tab="reja" aria-pressed="false"><span class="ic" style="background:#0a8577"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></svg></span>Haftalik reja</button>
     <div id="sideWeek"></div>
     <button class="me" data-act="logout"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/></svg>Hisobdan chiqish</button>
@@ -413,6 +434,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
   <button data-tab="bugun" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.900 4.900l1.400 1.400M17.700 17.700l1.400 1.400M2 12h2M20 12h2M4.900 19.100l1.400-1.400M17.700 6.300l1.400-1.400"/></svg>Bugun</button>
   <button data-tab="kalendar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Kalendar</button>
   <button data-tab="mijozlar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.500"/><path d="M2.500 20c.8-3.500 3.400-5.500 6.500-5.500s5.700 2 6.500 5.500"/><path d="M16 4.500a3.500 3.500 0 0 1 0 7M18 14.800c1.900.8 3.100 2.500 3.500 5.200"/></svg>Mijozlar</button>
+  <button data-tab="tolovlar" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2.500"/><path d="M2 10h20M6 15h4"/></svg>To'lovlar</button>
   <button data-tab="reja" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>Reja</button>
 </nav>
 
@@ -821,6 +843,110 @@ function rejaHead(){
   return h;
 }
 
+/* ---------- render: To'lovlar ---------- */
+state.pf="attn";
+const addMonths=(s,n)=>{ const d=parseD(s), day=d.getDate(); d.setDate(1); d.setMonth(d.getMonth()+n); d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate())); return dstr(d); };
+const hasBilling=c=>{ const b=c.billing||{}; return !!(b.paidUntil||b.monthly||b.outstanding>0||b.noSubscription); };
+function payState(c){
+  const b=c.billing||{}, t=todayStr();
+  const left=b.paidUntil?daysBetween(t,b.paidUntil):null;
+  const debt=Number(b.outstanding)>0;
+  let k="nodata";
+  if(b.noSubscription && !b.paidUntil) k="nosub";
+  else if(left!=null) k = left<0 ? "over" : left<=7 ? "soon" : "ok";
+  return {b,left,debt,k,attn:debt||k==="over"||k==="soon"};
+}
+function payPill(ps){
+  if(ps.k==="over") return `<span class="pill red">${-ps.left} kun o'tdi</span>`;
+  if(ps.k==="soon") return `<span class="pill or">${ps.left===0?"Bugun":ps.left+" kun qoldi"}</span>`;
+  if(ps.k==="ok") return `<span class="pill gr">${ps.left} kun qoldi</span>`;
+  if(ps.k==="nosub") return `<span class="pill">Obuna yo'q</span>`;
+  return `<span class="pill">Ma'lumot yo'q</span>`;
+}
+const sumMoney=list=>list.reduce((a,x)=>a+(Number(x)||0),0);
+function tolovRow(c){
+  const ps=payState(c), b=ps.b;
+  return `<div class="r tr" data-act="paysheet" data-id="${esc(c.id)}" role="button">${avatar(c.name)}
+    <div class="rt"><b>${esc(c.name)}</b><span>${b.paidUntil?`Keyingi to'lov: ${esc(dLabel(b.paidUntil))}`:esc(c.domain||CST[c.st]||"")}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
+    ${payPill(ps)}
+    <span class="pc">${b.monthly?esc(money(b.monthly,b.currency)):"—"}<small>oyiga</small></span>
+    <span class="pc">${b.lastPaidAmount?esc(money(b.lastPaidAmount,b.currency)):"—"}<small>${b.lastPaidAt?esc(dLabel(b.lastPaidAt)):"oxirgi to'lov"}</small></span>
+    ${ICON.chev}</div>`;
+}
+function renderTolovlar(){
+  const t=todayStr(), all=[...state.clients.values()];
+  const billed=all.filter(hasBilling).map(c=>({c,ps:payState(c)}));
+  const active=billed.filter(x=>x.ps.k==="ok"||x.ps.k==="soon");
+  const monthly=sumMoney(active.map(x=>x.ps.b.monthly));
+  const debtors=billed.filter(x=>x.ps.debt), debt=sumMoney(debtors.map(x=>x.ps.b.outstanding));
+  const soon=billed.filter(x=>x.ps.k==="soon"), soonSum=sumMoney(soon.map(x=>(Number(x.ps.b.monthly)||0)*(Number(x.ps.b.periodMonths)||1)));
+  const over=billed.filter(x=>x.ps.k==="over");
+  const ym=t.slice(0,7), paidM=billed.filter(x=>(x.ps.b.lastPaidAt||"").slice(0,7)===ym), paidSum=sumMoney(paidM.map(x=>x.ps.b.lastPaidAmount));
+  const nodata=all.filter(c=>c.st==="faol" && !hasBilling(c));
+  const F={
+    attn:["Diqqat talab", billed.filter(x=>x.ps.attn).map(x=>x.c)],
+    soon:["7 kun qoldi", soon.map(x=>x.c)],
+    over:["Muddati o'tgan", over.map(x=>x.c)],
+    debt:["Qarzdor", debtors.map(x=>x.c)],
+    ok:["To'langan", billed.filter(x=>x.ps.k==="ok"&&!x.ps.debt).map(x=>x.c)],
+    all:["Hammasi", billed.map(x=>x.c)],
+    nodata:["Ma'lumot yo'q", nodata]
+  };
+  if(!F[state.pf]) state.pf="attn";
+  const order={over:0,soon:1,ok:2,nosub:3,nodata:4};
+  const list=F[state.pf][1].slice().sort((a,b)=>{ const pa=payState(a), pb=payState(b);
+    return (pb.debt-pa.debt) || (order[pa.k]-order[pb.k]) || ((pa.b.paidUntil||"9").localeCompare(pb.b.paidUntil||"9")) || (a.name||"").localeCompare(b.name||""); });
+  const tile=(act,f,col,icon,val,sub,lbl,bad)=>`<button class="card tile pt${state.pf===f?" on":""}" data-act="${act}" data-f="${f}"><span class="ic" style="background:${col}">${icon}</span><b${bad?' class="bad"':""}>${val}</b><span class="ts">${sub}</span><span>${lbl}</span></button>`;
+  let h=`<div class="stats pstats">
+    ${tile("pfilter","ok","var(--green)",ICON.card,esc(money(monthly)),`${active.length} ta faol obuna`,"Oylik tushum")}
+    ${tile("pfilter","debt","var(--red)",ICON.card,esc(money(debt)),`${debtors.length} ta mijoz`,"Qarzdorlik",debt>0)}
+    ${tile("pfilter","soon","var(--orange)",ICON.clock,String(soon.length),soon.length?`~${esc(money(soonSum))} kutilmoqda`:"hech kim yo'q","7 kun ichida to'lov")}
+    ${tile("pfilter","over","var(--purple)",ICON.clock,String(over.length),`${cap1(MF[parseD(t).getMonth()])}da tushgan: ${esc(money(paidSum))}`,"Muddati o'tgan",over.length>0)}
+  </div>`;
+  h+=`<div class="card"><div class="chipsrow pchips" role="group" aria-label="Filtr">${Object.entries(F).map(([k,[l,a]])=>`<button class="chip" data-act="pfilter" data-f="${k}" aria-pressed="${state.pf===k}">${esc(l)} ${a.length}</button>`).join("")}</div>
+    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Oylik</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<p class="empty">${state.pf==="nodata"?"Hamma faol mijozlarda to'lov ma'lumoti bor.":"Bu filtrda mijoz yo'q."}</p>`}</div>`;
+  if(nodata.length && state.pf!=="nodata") h+=`<p class="hint" style="margin:12px 4px">${nodata.length} ta faol mijozda to'lov ma'lumoti yo'q. «Ma'lumot yo'q» filtrida ularni ochib, sana va summani kiriting.</p>`;
+  return h;
+}
+function openPaySheet(id){
+  const c=state.clients.get(id); if(!c) return;
+  const ps=payState(c), b=ps.b, per=Number(b.periodMonths)||1;
+  const due=ps.debt?Number(b.outstanding):(Number(b.monthly)||0)*per;
+  state.sheet={kind:"pay", id}; $("#ov").hidden=false; $("#sheet").className="sheet";
+  $("#sheet").innerHTML=`
+    <div class="sheet-top"><div><h2>${esc(c.name)}</h2><div class="ev-sub" style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">${payPill(ps)}${ps.debt?`<span class="pill red">Qarz ${esc(money(b.outstanding,b.currency))}</span>`:""}<button class="linkbtn" data-act="client" data-id="${esc(id)}">Mijoz kartasi</button></div></div><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <span class="cap pad" style="padding-top:4px">To'lov qabul qilish</span>
+    <form id="payForm" class="comp" novalidate>
+      <div class="two"><div><label class="lbl" for="p-amt">Summa, so'm <span class="req">*</span></label><input class="f" id="p-amt" inputmode="numeric" value="${due?Math.round(due):""}" placeholder="0"></div>
+        <div><label class="lbl" for="p-date">Sana</label><input class="f" id="p-date" type="date" value="${todayStr()}"></div></div>
+      <label class="chkl"><input type="checkbox" id="p-ext" ${ps.debt?"":"checked"}> Obunani uzaytirish:
+        <select class="f inl2" id="p-mon">${[1,2,3,6,12].map(n=>`<option value="${n}"${n===per?" selected":""}>${n} oyga</option>`).join("")}</select></label>
+      <div class="hint" id="p-prev" style="margin:0"></div>
+      <div class="err" id="p-err"></div>
+      <div class="actions"><button class="primary" type="submit">To'lovni saqlash</button></div>
+    </form>
+    <span class="cap pad">Obuna ma'lumoti</span>
+    <form id="subForm" class="comp" novalidate>
+      <div class="two"><div><label class="lbl" for="s-until">Keyingi to'lov sanasi</label><input class="f" id="s-until" type="date" value="${esc(b.paidUntil||"")}"></div>
+        <div><label class="lbl" for="s-mon">Oylik summa, so'm</label><input class="f" id="s-mon" inputmode="numeric" value="${b.monthly!=null?Math.round(b.monthly):""}" placeholder="0"></div></div>
+      <div class="two"><div><label class="lbl" for="s-per">Tarif</label><select class="f" id="s-per"><option value="">—</option>${[1,2,3,6,12].map(n=>`<option value="${n}"${n===Number(b.periodMonths)?" selected":""}>${n} oylik</option>`).join("")}</select></div>
+        <div><label class="lbl" for="s-debt">Qarz, so'm</label><input class="f" id="s-debt" inputmode="numeric" value="${b.outstanding?Math.round(b.outstanding):""}" placeholder="0"></div></div>
+      <div class="err" id="s-err"></div>
+      <div class="actions"><button class="ghost" type="submit">Saqlash</button>${b.syncedAt?`<span class="hint" style="margin:0">Oxirgi yangilanish: ${esc(dLabel(b.syncedAt))}</span>`:""}</div>
+    </form>`;
+  payPreview();
+}
+const num=v=>{ const n=Number(String(v||"").replace(/[^\d.]/g,"")); return isFinite(n)?n:0; };
+function payPreview(){
+  const el=$("#p-prev"); if(!el||!state.sheet||state.sheet.kind!=="pay") return;
+  const c=state.clients.get(state.sheet.id), b=(c&&c.billing)||{};
+  const amt=num($("#p-amt").value), ext=$("#p-ext").checked, n=Number($("#p-mon").value);
+  const parts=[];
+  if(ext){ const base=b.paidUntil||$("#p-date").value||todayStr(); parts.push(`Keyingi to'lov ${dLabel(base)} → ${dLabel(addMonths(base,n))}`); }
+  if(Number(b.outstanding)>0 && amt) parts.push(`Qarz ${money(b.outstanding)} → ${money(Math.max(0,b.outstanding-amt))}`);
+  el.textContent=parts.join(" · ");
+}
+
 /* ---------- client: sheet (phone) or pane (wide) ---------- */
 function curClient(){ return state.sheet&&state.sheet.kind==="client" ? state.sheet.id : (state.tab==="mijozlar"&&isWide() ? state.selClient : null); }
 function renderClientSheet(id){
@@ -943,6 +1069,7 @@ function renderSide(){
   set("n-bugun", callsFor(t).filter(c=>(c.st||"kut")==="kut").length);
   set("n-kalendar", [...state.events.values()].filter(e=>!e.done && e.date>=t).length);
   set("n-mijozlar", state.clients.size);
+  set("n-tolovlar", [...state.clients.values()].filter(c=>hasBilling(c)&&payState(c).attn).length);
   const sw=$("#sideWeek"); if(!sw) return;
   sw.innerHTML = state.plan ? `<div class="sh">Bu hafta · ${esc(state.plan.weekLabel||"")}</div>`+(state.plan.days||[]).map(d=>{ const c=counts(callsFor(d.id));
     return `<button class="wk${d.id===t?" on":""}" data-act="sideday" data-day="${esc(d.id)}"><span>${esc(d.label)}</span><span class="pb"><i style="width:${c.total?c.done/c.total*100:0}%"></i></span><span>${c.done}/${c.total}</span></button>`; }).join("") : "";
@@ -951,20 +1078,21 @@ function doRender(){
   state.pendingRender=false;
   const wide=isWide();
   document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.tab===state.tab)));
-  const titles={bugun:"Bugun", kalendar:"Kalendar", mijozlar:"Mijozlar", reja:"Haftalik reja"};
+  const titles={bugun:"Bugun", kalendar:"Kalendar", mijozlar:"Mijozlar", tolovlar:"To'lovlar", reja:"Haftalik reja"};
   $("#title").textContent=titles[state.tab];
   const t=todayStr(); const cd=parseD(state.calDay||t);
   $("#subLabel").textContent = state.tab==="bugun" ? dFull(t)
     : state.tab==="kalendar" ? `${cap1(MF[cd.getMonth()])} ${cd.getFullYear()}`
     : state.tab==="mijozlar" ? `${state.clients.size} ta klinika`
+    : state.tab==="tolovlar" ? `${dLabel(t)} holatiga`
     : state.plan ? `${state.plan.weekLabel||""} · ${counts(callsFor(null)).done} / ${state.calls.size} bajarildi` : "";
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
-  const fab=$("#fab"); fab.hidden=!state.db;
+  const fab=$("#fab"); fab.hidden=!state.db || state.tab==="tolovlar";
   fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="reja" ? "+ Qo'ng'iroq" : wide ? "+ Uchrashuv" : "+ Kalendarga";
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
-  $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : renderReja();
+  $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
   const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
 }
 
@@ -1019,7 +1147,9 @@ document.addEventListener("click", async e=>{
   switch(act){
     case "close": closeSheet(); return;
     case "gokal": state.tab="kalendar"; state.calDay=todayStr(); doRender(); window.scrollTo({top:0}); return;
-    case "gopay": state.tab="mijozlar"; state.cf="qarz"; state.selClient=null; doRender(); window.scrollTo({top:0}); return;
+    case "gopay": state.tab="tolovlar"; state.pf="attn"; doRender(); window.scrollTo({top:0}); return;
+    case "pfilter": state.pf=b.dataset.f; doRender(); return;
+    case "paysheet": openPaySheet(id); return;
     case "bq": state.bq=b.dataset.f; doRender(); return;
     case "caltoday": state.calDay=todayStr(); doRender(); return;
     case "calview": state.calView=b.dataset.v; doRender(); return;
@@ -1083,6 +1213,7 @@ $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidden) closeSheet(); });
 document.addEventListener("change", e=>{
   const t=e.target;
+  if(t.id==="p-ext"||t.id==="p-mon"||t.id==="p-date"){ payPreview(); return; }
   if(t.id==="e-time"){ const en=$("#e-end"), a=tmin(t.value); if(en && a!=null && (!en.value || tmin(en.value)<=a)) en.value=minToT(Math.min(a+60,23*60+59)); return; }
   if(t.dataset.act==="block" && state.plan && state.db){
     const blocks=state.plan.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
@@ -1095,6 +1226,7 @@ document.addEventListener("change", e=>{
 });
 document.addEventListener("input", e=>{
   const t=e.target;
+  if(t.id==="p-amt"||t.id==="p-date"){ payPreview(); return; }
   if(t.id==="gsearch"){
     if(!t.value) return;
     state.cq=t.value; state.cf="all"; state.tab="mijozlar"; t.value=""; doRender();
@@ -1156,6 +1288,25 @@ document.addEventListener("submit", async e=>{
     if(!text && !tags.length){ $("#h-err").textContent="Nima gaplashilganini yozing yoki mavzuni tanlang."; return; }
     try{ await addHistory(cid,{type:$("#h-type").value, text, tags, date:$("#h-date").value||todayStr()}); $("#h-text").value=""; f.querySelectorAll(".tag").forEach(x=>x.setAttribute("aria-pressed","false")); $("#h-err").textContent=""; document.activeElement.blur(); refreshClient(); }
     catch(er){ $("#h-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="payForm" || f.id==="subForm"){
+    const id=state.sheet&&state.sheet.id, c=id&&state.clients.get(id); if(!c) return;
+    const b={...(c.billing||{})}, t=todayStr();
+    if(f.id==="payForm"){
+      const amt=num($("#p-amt").value), date=$("#p-date").value||t, ext=$("#p-ext").checked, n=Number($("#p-mon").value);
+      if(!amt){ $("#p-err").textContent="To'lov summasini kiriting."; return; }
+      b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
+      if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
+      if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; }
+      try{ await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); closeSheet(); doRender(); }
+      catch(er){ $("#p-err").textContent=failMsg(er); }
+      return;
+    }
+    const until=$("#s-until").value, mon=$("#s-mon").value.trim(), per=$("#s-per").value, debt=$("#s-debt").value.trim();
+    b.paidUntil=until||null; b.monthly=mon?num(mon):null; b.periodMonths=per?Number(per):null; b.outstanding=debt?num(debt):0; b.currency=b.currency||"UZS"; b.syncedAt=t;
+    if(b.paidUntil) delete b.noSubscription;
+    try{ await updateClient(id,{billing:b}); closeSheet(); doRender(); }catch(er){ $("#s-err").textContent=failMsg(er); }
     return;
   }
   if(f.id==="clForm"){
