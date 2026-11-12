@@ -495,6 +495,33 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .evdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue);margin-left:4px;vertical-align:middle}
 .evc.plc{background:var(--accent-t);color:var(--accent);border-left:3px solid var(--accent)}
 .me2.plc2 .dot{background:var(--accent)!important} .me2.plc2{color:var(--accent);font-weight:600}
+/* gapirib kiritish */
+.qbtn{height:36px;border-radius:10px;background:var(--card);box-shadow:var(--shadow);display:flex;align-items:center;gap:7px;padding:0 13px;color:var(--accent);font-weight:600;flex:none}
+.qbtn svg{width:17px;height:17px}
+.qsheet{max-width:820px}
+.qin{padding:14px}
+.qin textarea{min-height:120px;font-size:15.5px;line-height:1.45;background:var(--inset)}
+.qbar{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.mic{height:42px;border-radius:21px;padding:0 18px 0 14px;background:var(--accent);color:var(--on-accent);font-weight:600;display:flex;align-items:center;gap:8px;box-shadow:0 3px 10px rgba(10,133,119,.3)}
+.mic svg{width:18px;height:18px} .mic.on{background:var(--red);box-shadow:0 0 0 6px var(--red-t);animation:qpulse 1.2s infinite}
+@keyframes qpulse{50%{box-shadow:0 0 0 10px rgba(255,59,48,.08)}}
+.qlist{padding:4px 0}
+.qrow{display:flex;gap:12px;padding:12px 16px;position:relative;align-items:flex-start}
+.qrow+.qrow{border-top:.5px solid var(--sep)}
+.qrow.off .qbody{opacity:.45}
+.qon{width:20px;height:20px;margin-top:8px;accent-color:var(--accent);flex:none}
+.qbody{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.qhd{display:flex;align-items:center;gap:8px;flex-wrap:wrap} .qhd b{font-size:13.5px}
+.qcl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.qcl input{width:220px;min-height:34px;padding:6px 10px;font-size:14px;font-weight:600}
+.qcl.miss input{box-shadow:inset 0 0 0 1.5px var(--red)}
+.qcl em{font-style:normal;font-size:11.5px;color:var(--ink2)}
+.qalt{display:flex;gap:10px;font-size:12.5px} .qalt .linkbtn{font-size:12.5px}
+.qf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px}
+.qf .f{min-height:36px;padding:7px 10px;font-size:14px} .qf .grow{flex:1 1 220px;width:auto} .qf .w120{width:130px} .qf .w150{width:150px} .qf .w110{width:110px}
+.chkl.sm{font-size:13.5px;font-weight:500} .chkl.sm input{width:18px;height:18px}
+.primary[disabled]{opacity:.4;pointer-events:none}
+@media (max-width:899px){ .qbtn{padding:0 10px;height:38px;border-radius:12px} .qbtn span{display:none} .qcl{margin-left:0;width:100%} .qcl input{flex:1;width:auto} .top{align-items:center} }
 </style>
 </head>
 <body class="auth">
@@ -512,6 +539,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
   <div class="content">
     <header class="top">
       <div class="tt"><div class="eb" id="subLabel"></div><h1 id="title">Zendo Mijozlar</h1></div>
+      <button class="qbtn" id="qbtn" type="button" data-act="quick" hidden title="Bugun nima qildingiz? Gapirib kiriting"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>Gapirib kiritish</span></button>
       <input id="gsearch" type="search" placeholder="Mijoz qidirish" aria-label="Mijoz qidirish" hidden>
       <button class="fab" id="fab" type="button" hidden>+</button>
     </header>
@@ -1101,6 +1129,193 @@ function payPreview(){
   el.textContent=parts.join(" · ");
 }
 
+/* ---------- shared save: payment ---------- */
+async function recordPayment(id, amt, date, ext, n){
+  const c=state.clients.get(id); if(!c) throw new Error("no client");
+  const b={...(c.billing||{})}, t=todayStr();
+  b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
+  if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
+  if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; if(!Number(b.monthly)) b.monthly=Math.round(amt/n); }
+  const pid=uid("p"), row={clientId:id, amount:amt, paidAt:date, months:ext?n:null};
+  await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
+  await updateClient(id,{billing:b});
+  await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date});
+}
+
+/* ---------- gapirib kiritish: rule-based parser (no AI, runs on device) ---------- */
+const QN=s=>String(s||"").toLowerCase().replace(/[‘’`ʻʼ´]/g,"'").replace(/[«»"]/g," ").replace(/\s+/g," ").trim();
+const QGEN=new Set("dental dent denta clinic klinika klinikasi stom stoma stomatologiya stomatology med medical medline plus service servis serves center centr markaz markazi shifo smile family premium doctor doktor lab and the new".split(" "));
+const qWords=s=>QN(s).replace(/\(.*?\)/g," ").split(/[^a-z0-9'а-яё]+/i).filter(Boolean);
+let qIndex=null;
+function buildQIndex(){
+  const full=[], words=new Map();
+  for(const c of state.clients.values()){
+    const ws=qWords(c.name).filter(w=>w.length>=2);
+    if(ws.length>=2 || ws.some(w=>!QGEN.has(w)&&w.length>=3)) full.push([ws.join(" "),c]);
+    for(const w of ws) if(w.length>=4 && !QGEN.has(w)){ if(!words.has(w)) words.set(w,[]); words.get(w).push(c); }
+  }
+  full.sort((a,b)=>b[0].length-a[0].length);
+  qIndex={full,words};
+}
+function qFindClients(text){
+  if(!qIndex) buildQIndex();
+  const toks=qWords(text), t=" "+toks.join(" ")+" ", found=new Map();
+  for(const [key,c] of qIndex.full) if(t.includes(" "+key)) found.set(c.id,{c,score:100+key.length});
+  for(const tok of toks) for(const [w,cs] of qIndex.words){
+    if(tok.startsWith(w) && tok.length<=w.length+6) for(const c of cs){ const s=10+w.length-cs.length*2+(c.st==="faol"?2:0); if(!found.has(c.id)||found.get(c.id).score<s) found.set(c.id,{c,score:s}); }
+  }
+  return [...found.values()].sort((a,b)=>b.score-a.score).map(x=>x.c);
+}
+const QWD={dushanba:1,seshanba:2,chorshanba:3,payshanba:4,juma:5,shanba:6,yakshanba:0};
+function qDate(n){
+  const t=todayStr();
+  if(/\bindinga\b/.test(n)) return addDays(t,2);
+  if(/\bertaga\b|\bertangi\b/.test(n)) return addDays(t,1);
+  let m=/(\d+)\s*kun(dan)?\s*keyin/.exec(n); if(m) return addDays(t,Number(m[1]));
+  if(/keyingi hafta/.test(n)) return addDays(t,7-((parseD(t).getDay()+6)%7));
+  m=/\b(\d{1,2})[.\/](\d{1,2})\b/.exec(n); if(m){ const y=parseD(t).getFullYear(), d=`${y}-${pad(m[2])}-${pad(m[1])}`; return d<t?`${y+1}-${pad(m[2])}-${pad(m[1])}`:d; }
+  m=new RegExp(`\\b(\\d{1,2})[- ]?(${MF.map(x=>x.slice(0,3)).join("|")})[a-z']*`).exec(n);
+  if(m){ const mi=MF.findIndex(x=>x.startsWith(m[2])), y=parseD(t).getFullYear(); let d=`${y}-${pad(mi+1)}-${pad(m[1])}`; if(d<t) d=`${y+1}-${pad(mi+1)}-${pad(m[1])}`; return d; }
+  for(const [w,wd] of Object.entries(QWD)){ if(new RegExp(`\\b${w}`).test(n) && !(w==="shanba" && /(yak|chor|pay|du|se)shanba/.test(n) && !/\bshanba/.test(n.replace(/(yak|chor|pay|du|se)shanba/g,"")))){ let k=(wd-parseD(t).getDay()+7)%7; if(k===0) k=7; return addDays(t,k); } }
+  if(/\bbugun\b.*(qilish kerak|qilaman|yuboraman|qo'ng'iroq qil)/.test(n)) return t;
+  return null;
+}
+function qTime(n){
+  let m=/\b(\d{1,2})[:.](\d{2})\b/.exec(n); if(m && Number(m[1])<24) return pad(m[1])+":"+m[2];
+  m=/soat\s*(\d{1,2})/.exec(n); if(m){ let h=Number(m[1]); if(h<8 && !/ertalab/.test(n)) h+=12; return pad(h)+":00"; }
+  if(/tushdan keyin/.test(n)) return "14:00"; if(/ertalab/.test(n)) return "10:00"; if(/kechqurun/.test(n)) return "17:00";
+  return "";
+}
+function qAmount(n){
+  let m=/(\d+(?:[.,]\d+)?)\s*(mln|million|milion)/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e6);
+  m=/(\d+(?:[.,]\d+)?)\s*ming/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e3);
+  m=/(\d{1,3}(?:[ .,]\d{3})+|\d{4,})/.exec(n); if(m) return Number(m[1].replace(/[ .,]/g,""));
+  return 0;
+}
+function qMonths(n){ const m=/(\d{1,2})\s*oy/.exec(n); if(m) return Number(m[1]); if(/yillik|\b1 yil|bir yil/.test(n)) return 12; return 0; }
+function qTags(n){ const T=[["sms","SMS"],["xodim","Xodimlar"],["kassa","Kassa"],["to'lov","To'lov"],["hisobot","Hisobot"],["ombor","Ombor"],["laborator","Laboratoriya"],["bemor","Bemorlar"]]; const r=T.filter(([k])=>n.includes(k)).map(x=>x[1]); if(/muammo yo'q|hammasi yaxshi|zo'r ishlayapti/.test(n)) r.push("Muammo yo'q"); return r; }
+function qParse(text){
+  const out=[], t=todayStr();
+  const parts=String(text||"").split(/(?<=[.!?;])\s+|\n+/).map(x=>x.trim()).filter(x=>x.length>2);
+  let last=null;
+  for(const raw of parts){
+    const n=QN(raw), cands=qFindClients(raw);
+    let c=cands[0]||null, inherited=false;
+    if(!c && last){ c=last; inherited=true; }
+    if(cands[0]) last=cands[0];
+    const cl=c?c.id:"", alt=(cands.length?cands:c?[c]:[]).slice(0,5).map(x=>x.id);
+    const fut=qDate(n), past=/(dim|ldi|di|ibdi|ibdi|ekan|yapti|madi|mabdi|gan)\b/.test(n);
+    const isPay=/to'la(di|b|gan|dim|shdi|shibdi|bdi)|to'lov qil|pul (tashla|o'tkaz)/.test(n) && qAmount(n)>0;
+    const base={src:raw, cands:alt, clientId:cl, inherited, on:true};
+    if(c && (!fut || past)){
+      const type=/\bzoom|demo\b/.test(n)?"zoom":/uchrash/.test(n)?"meet":/telegram|\btg\b|yozib/.test(n)?"tg":isPay?"pay":/qo'ng'iroq|gaplash|telefon|suhbat/.test(n)?"call":"note";
+      const hi=out.push({...base, kind:"hist", type, text:raw.replace(/\s+/g," "), tags:qTags(n)})-1;
+      const call=[...state.calls.values()].find(x=>x.day===t && clientForCall(x)===c);
+      let st=null;
+      if(/ko'tarmad|olmad|javob berma|o'chirilgan|aloqa yo'q/.test(n)) st="kot";
+      else if(/rad et|kerak emas|qiziqma|xohlama/.test(n)) st="rad";
+      else if(/muammo|ishlamay|kelmay|xato|chiqmay|ochilmay|bormay/.test(n) && !/muammo yo'q/.test(n)) st="muammo";
+      else if(isPay||/yillik/.test(n)) st="tolov";
+      else if(/\bzoom|demo/.test(n)) st="zoom";
+      else if(/gaplash|qo'ng'iroq|telefon|suhbat/.test(n)) st="gap";
+      if(st && out[hi].type==="note") out[hi].type="call";
+      if(call && st && (call.st||"kut")!==st) out.push({...base, kind:"status", callId:call.id, st});
+    }
+    if(isPay && c){ const mo=qMonths(n)||Number((c.billing||{}).periodMonths)||1; out.push({...base, kind:"pay", amount:qAmount(n), months:mo, ext:!(Number((c.billing||{}).outstanding)>0), date:t}); }
+    if(fut){
+      const type=/\bzoom|demo/.test(n)?"zoom":/uchrash/.test(n)?"meet":/to'lov|havola|hisob|schyot|invoice|qarz/.test(n)?"pay":/support|dasturchi|tuzat/.test(n)?"support":/qo'ng'iroq|telefon|bog'lan|gaplash/.test(n)?"call":"task";
+      let title=raw.replace(/\s+/g," ").replace(/[.!?;]+$/,""); if(title.length>90) title=title.slice(0,88)+"…";
+      out.push({...base, clientId:cl, kind:"event", type, title, date:fut, time:qTime(n)});
+    }
+    if(!c && !fut) out.push({...base, kind:"hist", type:"note", text:raw, tags:qTags(n), on:false});
+  }
+  return out;
+}
+
+/* ---------- gapirib kiritish: sheet ---------- */
+state.qacts=[];
+const QKIND={hist:"Tarixga yozuv", status:"Bugungi qo'ng'iroq natijasi", pay:"To'lov", event:"Vazifa / uchrashuv"};
+const QICON={hist:"var(--ink2)", status:"var(--orange)", pay:"var(--green)", event:"var(--blue)"};
+function openQuick(){
+  qIndex=null; state.qacts=[];
+  state.sheet={kind:"quick"}; $("#ov").hidden=false; $("#sheet").className="sheet tall qsheet";
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  $("#sheet").innerHTML=`<div class="sheet-top"><div><h2>Gapirib kiritish</h2><div class="ev-sub" style="margin-top:4px">Bugun nima qildingiz? Gapiring yoki yozing — ilova o'zi ajratib beradi.</div></div><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <div class="card qin">
+      <textarea class="f" id="q-text" placeholder="Masalan: Sergo bilan gaplashdim, yillik to'lovga rozi. Ertaga soat 11 da havola yuboraman. Prestige'da SMS kelmayapti, juma kuni qayta qo'ng'iroq qilaman. Mega stom 6 oyga 2 880 000 to'ladi."></textarea>
+      <div class="qbar">
+        <button type="button" class="mic" id="q-mic" data-act="qmic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>${SR?"Gapirish":"Diktovka"}</span></button>
+        ${SR?`<select class="f inl2" id="q-lang" aria-label="Til"><option value="uz-UZ">O'zbekcha</option><option value="ru-RU">Ruscha</option></select>`:""}
+        <span class="hint" id="q-st" style="margin:0;flex:1">${SR?"":"Mac: Fn (🌐) tugmasini ikki marta bosing. iPhone: klaviaturadagi 🎙."}</span>
+      </div>
+    </div>
+    <div id="q-out"></div>`;
+  setTimeout(()=>{ const f=$("#q-text"); if(f) f.focus(); },60);
+}
+let qRec=null;
+function qMic(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition, ta=$("#q-text"), btn=$("#q-mic"), st=$("#q-st");
+  if(!SR){ ta.focus(); st.textContent=/Mac/.test(navigator.platform)?"Matn maydoni tayyor. Fn (🌐) tugmasini ikki marta bosib gapiring — Mac diktovkasi shu yerga yozadi.":"Klaviaturadagi 🎙 tugmasini bosib gapiring."; return; }
+  if(qRec){ qRec.stop(); return; }
+  try{
+    qRec=new SR(); qRec.lang=($("#q-lang")||{}).value||"uz-UZ"; qRec.continuous=true; qRec.interimResults=true;
+    const base=ta.value?ta.value.replace(/\s*$/," "):"";
+    qRec.onresult=e=>{ let fin="",tmp=""; for(const r of e.results) r.isFinal?(fin+=r[0].transcript.trim()+". "):(tmp+=r[0].transcript); ta.value=base+fin+tmp; };
+    qRec.onerror=e=>{ st.textContent=e.error==="not-allowed"?"Mikrofonga ruxsat berilmadi.":(e.error==="language-not-supported"||e.error==="service-not-allowed")?"Bu til diktovkada yo'q. Ruschani tanlang yoki Fn ikki marta bosing.":"Mikrofon ishlamadi ("+e.error+"). Fn ikki marta bosib ko'ring."; };
+    qRec.onend=()=>{ qRec=null; btn.classList.remove("on"); btn.querySelector("span").textContent="Gapirish"; if(!/ishlamadi|ruxsat|yo'q/.test(st.textContent)) st.textContent=""; qRun(); };
+    qRec.start(); btn.classList.add("on"); btn.querySelector("span").textContent="To'xtatish"; st.textContent="Eshityapman…";
+  }catch(e){ qRec=null; st.textContent="Mikrofon ishlamadi. Fn (🌐) ikki marta bosib ko'ring."; }
+}
+function qRun(){ const ta=$("#q-text"); if(!ta) return; state.qacts=qParse(ta.value); qRender(); }
+function qClientInput(a,i){
+  const c=a.clientId?state.clients.get(a.clientId):null;
+  const opts=a.cands.filter(id=>id!==a.clientId).map(id=>state.clients.get(id)).filter(Boolean);
+  return `<span class="qcl${c?"":" miss"}"><input class="f" list="q-all" data-qi="${i}" data-qf="client" value="${esc(c?c.name:"")}" placeholder="Mijozni tanlang">${a.inherited&&c?`<em>oldingi gapdan</em>`:""}${opts.length?`<span class="qalt">${opts.map(o=>`<button type="button" class="linkbtn" data-act="qpick" data-i="${i}" data-id="${esc(o.id)}">${esc(o.name)}</button>`).join("")}</span>`:""}</span>`;
+}
+function qRender(){
+  const box=$("#q-out"); if(!box) return;
+  const A=state.qacts;
+  if(!A.length){ box.innerHTML=$("#q-text").value.trim()?`<p class="empty sm">Hech narsa ajratib bo'lmadi. Mijoz nomini va nima bo'lganini aniqroq ayting.</p>`:""; return; }
+  const row=(a,i)=>{
+    let f="";
+    if(a.kind==="hist") f=`<select class="f inl2" data-qi="${i}" data-qf="type">${Object.entries(H_TYPES).map(([k,l])=>`<option value="${k}"${a.type===k?" selected":""}>${l}</option>`).join("")}</select><input class="f grow" data-qi="${i}" data-qf="text" value="${esc(a.text)}">`;
+    if(a.kind==="status") f=`<select class="f inl2" data-qi="${i}" data-qf="st">${STATUSES.map(x=>`<option value="${x.k}"${a.st===x.k?" selected":""}>${esc(x.l)}</option>`).join("")}</select><span class="hint" style="margin:0">rejadagi bugungi qo'ng'iroq</span>`;
+    if(a.kind==="pay") f=`<input class="f w120" inputmode="numeric" data-qi="${i}" data-qf="amount" value="${a.amount}"> so'm <select class="f inl2" data-qi="${i}" data-qf="months">${[1,2,3,6,12].map(n=>`<option value="${n}"${n===a.months?" selected":""}>${n} oyga</option>`).join("")}</select><label class="chkl sm"><input type="checkbox" data-qi="${i}" data-qf="ext" ${a.ext?"checked":""}> obunani uzaytirish</label>`;
+    if(a.kind==="event") f=`<select class="f inl2" data-qi="${i}" data-qf="type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${a.type===k?" selected":""}>${l}</option>`).join("")}</select><input class="f w150" type="date" data-qi="${i}" data-qf="date" value="${esc(a.date)}"><input class="f w110" type="time" data-qi="${i}" data-qf="time" value="${esc(a.time)}"><input class="f grow" data-qi="${i}" data-qf="title" value="${esc(a.title)}">`;
+    return `<div class="qrow${a.on?"":" off"}"><input type="checkbox" class="qon" data-qi="${i}" data-qf="on" ${a.on?"checked":""} aria-label="Saqlash"><div class="qbody"><div class="qhd"><i class="dot" style="background:${QICON[a.kind]}"></i><b>${QKIND[a.kind]}</b>${qClientInput(a,i)}</div><div class="qf">${f}</div></div></div>`;
+  };
+  const n=A.filter(a=>a.on).length;
+  box.innerHTML=`<div class="rs0"><span class="cap">Topildi: ${A.length} ta</span><span class="hint" style="margin:0">Keraksizini belgidan chiqaring, xatosini tuzating</span></div>
+    <div class="card qlist">${A.map(row).join("")}</div>
+    <datalist id="q-all">${[...state.clients.values()].map(c=>`<option value="${esc(c.name)}">`).join("")}</datalist>
+    <div class="err" id="q-err"></div>
+    <div class="actions" style="margin-top:12px"><button class="primary" data-act="qsave"${n?"":" disabled"}>Saqlash (${n})</button><button class="ghost" data-act="qclear">Tozalash</button></div>`;
+}
+function qSet(t){
+  const i=Number(t.dataset.qi), f=t.dataset.qf, a=state.qacts[i]; if(!a) return;
+  if(f==="on"||f==="ext") a[f]=t.checked;
+  else if(f==="client"){ const v=t.value.trim().toLowerCase(), c=[...state.clients.values()].find(x=>x.name.toLowerCase()===v); a.clientId=c?c.id:""; a.inherited=false; }
+  else if(f==="amount") a.amount=num(t.value);
+  else if(f==="months") a.months=Number(t.value);
+  else a[f]=t.value;
+}
+async function qSave(){
+  const A=state.qacts.filter(a=>a.on), err=$("#q-err"), t=todayStr();
+  const bad=A.find(a=>a.kind!=="event" && !state.clients.has(a.clientId));
+  if(bad){ err.textContent=`«${bad.src.slice(0,50)}» uchun mijoz tanlanmagan.`; return; }
+  const badPay=A.find(a=>a.kind==="pay" && !a.amount); if(badPay){ err.textContent="To'lov summasini kiriting."; return; }
+  let ok=0;
+  try{
+    for(const a of A){
+      if(a.kind==="hist"){ await addHistory(a.clientId,{type:a.type, text:a.text, tags:a.tags||[], date:t}); ok++; }
+      else if(a.kind==="status"){ await writeCall(a.callId,{st:a.st, clientId:a.clientId}); ok++; }
+      else if(a.kind==="pay"){ await recordPayment(a.clientId, a.amount, a.date||t, a.ext, a.months); ok++; }
+      else if(a.kind==="event"){ const id=uid("e"), d={type:a.type, clientId:a.clientId||null, title:a.title||EV_DEF[a.type]||EV_TYPES[a.type], date:a.date, time:a.time||"", timeEnd:a.time?minToT(tmin(a.time)+60):"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+id).set(d); state.events.set(id,{id,...d}); ok++; }
+    }
+    closeSheet(); doRender(); setNotice(`${ok} ta yozuv saqlandi.`); setTimeout(()=>setNotice(""),4000);
+  }catch(er){ err.textContent=(ok?`${ok} tasi saqlandi, keyingisida xato: `:"")+failMsg(er); }
+}
+
 /* ---------- client: sheet (phone) or pane (wide) ---------- */
 function curClient(){ return state.sheet&&state.sheet.kind==="client" ? state.sheet.id : (state.tab==="mijozlar"&&isWide() ? state.selClient : null); }
 function renderClientSheet(id){
@@ -1242,6 +1457,7 @@ function doRender(){
     : state.tab==="tolovlar" ? `${dLabel(t)} holatiga · ${state.clients.size} ta klinika`
     : `${cap1(MF[parseD(weekMon(state.rweek)).getMonth()])} · ${weekRange(state.rweek)}${callsFor(null).length?` · ${counts(callsFor(null)).done} / ${callsFor(null).length} bajarildi`:""}`;
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
+  $("#qbtn").hidden = !state.db;
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
   const fab=$("#fab"); fab.hidden=!state.db;
   fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="tolovlar" ? "+ To'lov" : state.tab==="reja" ? "+ Vazifa" : "+ Vazifa";
@@ -1313,6 +1529,11 @@ document.addEventListener("click", async e=>{
       state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
     }
     case "paypick": openPayPicker(); return;
+    case "quick": openQuick(); return;
+    case "qmic": qMic(); return;
+    case "qpick": { const a=state.qacts[Number(b.dataset.i)]; if(a){ a.clientId=b.dataset.id; a.inherited=false; qRender(); } return; }
+    case "qsave": qSave(); return;
+    case "qclear": $("#q-text").value=""; state.qacts=[]; qRender(); $("#q-text").focus(); return;
     case "paysheet": { const bk=state.sheet&&state.sheet.kind==="client"?state.sheet.id:null; openPaySheet(id); if(state.sheet) state.sheet.back=bk; return; }
     case "focususers": { const f=$("#c-users"); if(f){ f.focus(); f.select(); } return; }
     case "quicktask": { const cid=b.dataset.client, onPhone=state.sheet&&state.sheet.kind==="client";
@@ -1426,6 +1647,7 @@ document.addEventListener("keydown", e=>{ if(e.key==="Escape" && !$("#ov").hidde
 document.addEventListener("change", e=>{
   const t=e.target;
   if(t.id==="p-ext"||t.id==="p-mon"||t.id==="p-date"){ payPreview(); return; }
+  if(t.dataset&&t.dataset.qi!=null){ qSet(t); if(t.dataset.qf==="on"||t.dataset.qf==="client") qRender(); return; }
   if(t.id==="e-time"){ const en=$("#e-end"), a=tmin(t.value); if(en && a!=null && (!en.value || tmin(en.value)<=a)) en.value=minToT(Math.min(a+60,23*60+59)); return; }
   if(t.dataset.act==="block" && viewPlan() && state.db){
     const vp=viewPlan(); const blocks=vp.blocks.map((b,i)=>i===Number(t.dataset.i)?{...b,done:t.checked}:b);
@@ -1440,6 +1662,8 @@ document.addEventListener("change", e=>{
 document.addEventListener("input", e=>{
   const t=e.target;
   if(t.id==="p-amt"||t.id==="p-date"){ payPreview(); return; }
+  if(t.id==="q-text"){ clearTimeout(timers.q); timers.q=setTimeout(qRun,450); return; }
+  if(t.dataset&&t.dataset.qi!=null&&t.dataset.qf!=="on"&&t.dataset.qf!=="ext"){ qSet(t); return; }
   if(t.id==="pp-q"){ const l=$("#pp-list"); if(l) l.innerHTML=payPickList(t.value); return; }
   if(t.id==="gsearch"){
     if(!t.value) return;
@@ -1510,11 +1734,7 @@ document.addEventListener("submit", async e=>{
     if(f.id==="payForm"){
       const amt=num($("#p-amt").value), date=$("#p-date").value||t, ext=$("#p-ext").checked, n=Number($("#p-mon").value);
       if(!amt){ $("#p-err").textContent="To'lov summasini kiriting."; return; }
-      b.lastPaidAmount=amt; b.lastPaidAt=date; b.currency=b.currency||"UZS"; b.syncedAt=t; delete b.noSubscription;
-      if(Number(b.outstanding)>0) b.outstanding=Math.max(0,Number(b.outstanding)-amt);
-      if(ext){ b.paidUntil=addMonths(b.paidUntil||date,n); b.periodMonths=n; if(!Number(b.monthly)) b.monthly=Math.round(amt/n); }
-      try{ const pid=uid("p"); const row={clientId:id, amount:amt, paidAt:date, months:ext?n:null}; await state.db.doc("payments/"+pid).set(row); state.payments.set(pid,{id:pid,...row});
-        await updateClient(id,{billing:b}); await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date}); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
+      try{ await recordPayment(id, amt, date, ext, n); { const bk=state.sheet.back; if(bk) openClient(bk); else closeSheet(); } doRender(); }
       catch(er){ $("#p-err").textContent=failMsg(er); }
       return;
     }
