@@ -373,7 +373,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .dcol.td{background-color:rgba(255,59,48,.045)}
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--red)}
-.t-zoom{--c:var(--blue);--cx:var(--blue-x)} .t-call{--c:var(--orange);--cx:var(--orange-x)} .t-meet{--c:var(--purple);--cx:var(--purple-x)} .t-task{--c:var(--accent);--cx:var(--accent)}
+.t-zoom{--c:var(--blue);--cx:var(--blue-x)} .t-call{--c:var(--orange);--cx:var(--orange-x)} .t-meet{--c:var(--purple);--cx:var(--purple-x)} .t-task{--c:var(--accent);--cx:var(--accent)} .t-pay{--c:var(--green);--cx:var(--green-x)} .t-support{--c:var(--red);--cx:var(--red-x)}
 .evb{background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);box-shadow:none;border-radius:6px;padding:3px 6px}
 .evb span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
 .adr{display:grid;border-bottom:1px solid var(--sep)}
@@ -487,6 +487,14 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .wgr{display:flex;gap:4px}
 .wp.past b{color:var(--ink2)}
 @media (min-width:900px){ .wkp{flex-wrap:wrap;row-gap:10px} }
+/* categories + plan/calendar link */
+.cats{display:flex;flex-wrap:wrap;gap:6px}
+.cat{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;background:var(--fill);font-size:13.5px;font-weight:500}
+.cat .dot{background:var(--c)}
+.cat[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 18%,var(--card));color:var(--cx);box-shadow:inset 0 0 0 1.5px var(--c)}
+.evdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue);margin-left:4px;vertical-align:middle}
+.evc.plc{background:var(--accent-t);color:var(--accent);border-left:3px solid var(--accent)}
+.me2.plc2 .dot{background:var(--accent)!important} .me2.plc2{color:var(--accent);font-weight:600}
 </style>
 </head>
 <body class="auth">
@@ -534,7 +542,8 @@ const ST_LABEL = Object.fromEntries(STATUSES.map(s=>[s.k,s.l]));
 const GROUPS = {support:"Shoshilinch support", yangi:"Yangi ro'yxatdan o'tgan", faol:"Faol mijoz", ketgan:"Ketgan mijoz", qayta:"Qayta urinish", lid:"Sotuv lidi", vazifa:"Vazifa"};
 const CST = {faol:"Faol mijoz", yangi:"Yangi ro'yxatdan o'tgan", lid:"Sotuv lidi", ketgan:"Ketgan mijoz"};
 const DONE = new Set(["gap","muammo","zoom","tolov","rad"]);
-const EV_TYPES = {zoom:"Zoom", call:"Qo'ng'iroq", meet:"Uchrashuv", task:"Vazifa"};
+const EV_TYPES = {call:"Qo'ng'iroq", zoom:"Zoom / demo", meet:"Uchrashuv", task:"Vazifa", pay:"To'lov", support:"Support"};
+const EV_DEF = {call:"Qo'ng'iroq qilish", zoom:"Zoom / demo", meet:"Uchrashuv", task:"", pay:"To'lovni eslatish", support:"Muammoni hal qilish"};
 const H_TYPES = {call:"Qo'ng'iroq", zoom:"Zoom", meet:"Uchrashuv", tg:"Telegram", note:"Izoh", pay:"To'lov"};
 const TOPICS = ["SMS","Xodimlar","Kassa","To'lov","Hisobot","Ombor","Laboratoriya","Bemorlar","Muammo yo'q"];
 const MONTHS = ["yan","fev","mar","apr","may","iyun","iyul","avg","sen","okt","noy","dek"];
@@ -637,7 +646,7 @@ const STDOT={kut:"var(--ink3)",gap:"var(--green)",muammo:"var(--red)",zoom:"var(
 const STMARK={gap:"✓",zoom:"✓",tolov:"✓",muammo:"!",kot:"↺",rad:"✕"};
 const CSTPILL={faol:"gr",yangi:"bl",lid:"or",ketgan:""};
 const PAYPILL={"p-bad":"red","p-warn":"or","p-ok":"gr"};
-const EVC={zoom:"var(--blue)",call:"var(--orange)",meet:"var(--purple)",task:"var(--accent)"};
+const EVC={zoom:"var(--blue)",call:"var(--orange)",meet:"var(--purple)",task:"var(--accent)",pay:"var(--green)",support:"var(--red)"};
 const byWhen=(a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""));
 const ckHTML=s=>STMARK[s]?`<span class="ck on" style="background:${STDOT[s]};border-color:${STDOT[s]}">${STMARK[s]}</span>`:`<span class="ck"></span>`;
 
@@ -757,8 +766,8 @@ function timeGrid(days){
   const now=new Date(), nowM=now.getHours()*60+now.getMinutes(), hasToday=days.includes(t);
   const we=d=>parseD(d).getDay()%6===0;
   const head=days.map(d=>{ const dd=parseD(d); return `<button class="${d===t?"td":""}${we(d)?" we":""}" data-act="goday" data-day="${d}">${WD[dd.getDay()]}<b>${dd.getDate()}</b></button>`; }).join("");
-  const un=days.map(d=>eventsOn(d).filter(e=>tmin(e.time)==null));
-  const allday=un.some(a=>a.length) ? `<div class="adr" style="${cols}"><span class="adl">kun bo'yi</span>${un.map(a=>`<div class="adc">${a.map(e=>`<button class="evc ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}">${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}</div>`).join("")}</div>` : "";
+  const un=days.map(d=>eventsOn(d).filter(e=>tmin(e.time)==null)), pc=days.map(d=>counts(callsFor(d)));
+  const allday=(un.some(a=>a.length)||pc.some(c=>c.total)) ? `<div class="adr" style="${cols}"><span class="adl">kun bo'yi</span>${un.map((a,i)=>`<div class="adc">${pc[i].total?`<button class="evc plc" data-act="gocalls" data-day="${days[i]}">${pc[i].done}/${pc[i].total} qo'ng'iroq</button>`:""}${a.map(e=>`<button class="evc ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}">${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}</div>`).join("")}</div>` : "";
   let times=""; for(let hh=1;hh<24;hh++) times+=`<span style="top:${hh*HH}px">${pad(hh)}:00</span>`;
   if(hasToday) times+=`<span class="nowl" style="top:${nowM/60*HH}px">${nowTime()}</span>`;
   const body=days.map(d=>{
@@ -778,7 +787,7 @@ function monthGrid(){
   let h=`<div class="card"><div class="mhd">${WD1.map(x=>`<span>${x}</span>`).join("")}</div><div class="mgrid" style="grid-template-rows:repeat(${weeks},minmax(112px,1fr))">`;
   for(let i=0;i<weeks*7;i++){
     const d=new Date(y,m,1-off+i), ds=dstr(d), evs=eventsOn(ds);
-    h+=`<div class="mc${d.getMonth()!==m?" out":""}" data-act="monthnew" data-day="${ds}"><button class="mn${ds===t?" td":""}" data-act="goday" data-day="${ds}">${d.getDate()}</button>${evs.slice(0,3).map(e=>`<button class="me2 ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}"><i class="dot" style="background:${EVC[e.type]||"var(--ink3)"}"></i>${e.time?`<em>${esc(e.time)}</em>`:""}${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}${evs.length>3?`<button class="mmore" data-act="goday" data-day="${ds}">yana ${evs.length-3} ta</button>`:""}</div>`;
+    h+=`<div class="mc${d.getMonth()!==m?" out":""}" data-act="monthnew" data-day="${ds}"><button class="mn${ds===t?" td":""}" data-act="goday" data-day="${ds}">${d.getDate()}</button>${(()=>{ const c=counts(callsFor(ds)); return c.total?`<button class="me2 plc2" data-act="gocalls" data-day="${ds}"><i class="dot"></i>${c.done}/${c.total} qo'ng'iroq</button>`:""; })()}${evs.slice(0,3).map(e=>`<button class="me2 ${evCls(e)}${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}"><i class="dot" style="background:${EVC[e.type]||"var(--ink3)"}"></i>${e.time?`<em>${esc(e.time)}</em>`:""}${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}${evs.length>3?`<button class="mmore" data-act="goday" data-day="${ds}">yana ${evs.length-3} ta</button>`:""}</div>`;
   }
   return h+`</div></div>`;
 }
@@ -796,6 +805,7 @@ function yearGrid(){
 }
 function renderKalendar(){
   const t=todayStr(); if(!state.calDay) state.calDay=t;
+  if(state.db) syncWeekSubs();
   const start=addDays(state.calDay, -((parseD(state.calDay).getDay()+6)%7));
   const days=[...Array(7)].map((_,i)=>addDays(start,i));
   if(!isWide()){
@@ -899,11 +909,14 @@ function renderReja(){
   const selCard=sel?`<div class="card">${callDetail(sel)}</div>`:"";
   if(v==="kun"){
     const list=callsFor(state.day);
-    if(!callsFor(null).length && !viewPlan()) return emptyWeek();
-    const left=list.length?`<div class="card">${callsCard(list)}</div>`:`<div class="card emptyc sm"><h3>${esc(dFull(state.day))}</h3><p>Bu kunga qo'ng'iroq rejalashtirilmagan.</p><div class="actions"><button class="ghost" data-act="newcall">+ Qo'ng'iroq qo'shish</button></div></div>`;
-    const vp=viewPlan(), hasBlocks=!!(vp&&(vp.blocks||[]).some(x=>x.day===state.day)), right=selCard+(hasBlocks?blocksCard():"")+rulesCard();
-    if(wide) return right?`<div class="rj">${left}<div class="col">${right}</div></div>`:left;
-    return (list.length?summaryHTML(list):"")+left;
+    const wkEv=weekDays(state.rweek).some(d=>eventsOn(d).length);
+    if(!callsFor(null).length && !viewPlan() && !wkEv) return emptyWeek();
+    const devs=eventsOn(state.day);
+    const evCard=`<div class="card"><div class="ct"><h3>Vazifa va uchrashuvlar</h3><em class="cnt">${devs.length||""}</em><button class="linkbtn more" data-act="newtask" data-day="${state.day}">+ Vazifa</button></div>${devs.length?devs.map(evRow).join(""):`<p class="empty sm">Bu kunga vazifa yo'q.</p>`}</div>`;
+    const left=list.length?`<div class="card"><div class="ct"><h3>Qo'ng'iroqlar ro'yxati</h3><em class="cnt">${list.length}</em><button class="linkbtn more" data-act="newcall">+ Qo'ng'iroq</button></div>${callsCard(list)}</div>`:`<div class="card emptyc sm"><h3>${esc(dFull(state.day))}</h3><p>Bu kunga qo'ng'iroqlar ro'yxati yo'q.</p><div class="actions"><button class="ghost" data-act="newcall">+ Qo'ng'iroq qo'shish</button></div></div>`;
+    const vp=viewPlan(), hasBlocks=!!(vp&&(vp.blocks||[]).some(x=>x.day===state.day)), right=selCard+evCard+(hasBlocks?blocksCard():"")+rulesCard();
+    if(wide) return `<div class="rj">${left}<div class="col">${right}</div></div>`;
+    return evCard+(list.length?summaryHTML(list):"")+left;
   }
   if(v==="jadval") return `<div class="col">${blocksCard()}${rulesCard()}</div>`;
   const q=state.q.trim().toLowerCase();
@@ -939,7 +952,7 @@ function rejaHead(){
     return `<button class="wp${w===rw?" on":""}${w===cw?" cur":""}${w<cw?" past":""}" data-act="rweek" data-w="${w}"><b>${esc(weekRange(w))}</b><span>${lbl?esc(lbl):"&nbsp;"}</span></button>`; }).join("")}</div></div>`).join("")}</div>`;
   if(v!=="hammasi"){
     h+=`<div class="card dstrip">${weekDays(rw).map(d=>{ const c=counts(callsFor(d)), dd=parseD(d);
-      return `<button class="ds${d===state.day?" on":""}${d===t?" td":""}${d<t?" ps":""}" data-act="rday" data-day="${d}"><span class="dw">${WD[dd.getDay()]}</span><span class="dn">${dd.getDate()}</span><span class="dc">${c.total?`${c.done}/${c.total}`:"&nbsp;"}</span><i class="dbar"><i style="width:${c.total?Math.max(4,c.done/c.total*100):0}%"></i></i></button>`; }).join("")}</div>`;
+      return `<button class="ds${d===state.day?" on":""}${d===t?" td":""}${d<t?" ps":""}" data-act="rday" data-day="${d}"><span class="dw">${WD[dd.getDay()]}</span><span class="dn">${dd.getDate()}</span><span class="dc">${c.total?`${c.done}/${c.total}`:"&nbsp;"}${eventsOn(d).filter(e=>!e.done).length?`<i class="evdot" title="${eventsOn(d).filter(e=>!e.done).length} ta vazifa"></i>`:""}</span><i class="dbar"><i style="width:${c.total?Math.max(4,c.done/c.total*100):0}%"></i></i></button>`; }).join("")}</div>`;
   }
   return h;
 }
@@ -948,7 +961,7 @@ function emptyWeek(){
   return `<div class="card emptyc"><div class="eic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8 14h8M8 17.5h5"/></svg></div>
     <h3>${own?"Bu haftaga":esc(weekRange(state.rweek))+" haftasiga"} reja tuzilmagan</h3>
     <p>Qo'ng'iroqlarni o'zingiz qo'shing yoki Claude'ga «${esc(weekRange(state.rweek))} haftasi rejasini tuz» deb yozing.</p>
-    <div class="actions"><button class="primary" data-act="newcall">+ Qo'ng'iroq qo'shish</button>${own?"":`<button class="ghost" data-act="rweek" data-w="${state.curWeek}">Shu haftaga qaytish</button>`}</div></div>`;
+    <div class="actions"><button class="primary" data-act="newtask" data-day="${state.day}">+ Vazifa qo'shish</button><button class="ghost" data-act="newcall">+ Qo'ng'iroq ro'yxatga</button>${own?"":`<button class="ghost" data-act="rweek" data-w="${state.curWeek}">Shu haftaga qaytish</button>`}</div></div>`;
 }
 
 /* ---------- render: To'lovlar ---------- */
@@ -1140,14 +1153,15 @@ function openEventForm(opts){
   $("#ov").hidden=false; $("#sheet").className="sheet";
   const date = e?e.date:(opts.date||state.calDay||todayStr());
   $("#sheet").innerHTML=`
-    <div class="sheet-top"><h2>${e?"Tahrirlash":opts.heading||"Kalendarga qo'shish"}</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
+    <div class="sheet-top"><h2>${e?"Tahrirlash":opts.heading||"Vazifa qo'shish"}</h2><button class="x" data-act="close" aria-label="Yopish">×</button></div>
     <form id="evForm" class="list" novalidate>
-      <div><label class="lbl" for="e-type">Turi</label><select class="f" id="e-type">${Object.entries(EV_TYPES).map(([k,l])=>`<option value="${k}"${(e?e.type:(opts.type||"zoom"))===k?" selected":""}>${l}</option>`).join("")}</select></div>
+      <div><label class="lbl">Kategoriya</label><input type="hidden" id="e-type" value="${esc(e?e.type:(opts.type||"call"))}">
+        <div class="cats" role="radiogroup" aria-label="Kategoriya">${Object.entries(EV_TYPES).map(([k,l])=>`<button type="button" class="cat t-${k}" role="radio" data-act="cat" data-k="${k}" aria-pressed="${(e?e.type:(opts.type||"call"))===k}"><i class="dot"></i>${l}</button>`).join("")}</div></div>
       <div><label class="lbl">Mijoz</label><div id="e-pickwrap">${clientPicker(e?e.clientId:(opts.clientId||null))}</div></div>
       <div><label class="lbl" for="e-title">Nima haqida <span class="req">*</span></label><input class="f" id="e-title" value="${esc(e?e.title:(opts.title||""))}" placeholder="Masalan: Kassa bo'yicha o'qitish"></div>
       <div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}">
         <div class="qd" role="group" aria-label="Tez sana">${[["Bugun",0],["Ertaga",1],["Indinga",2],["Bir haftadan keyin",7]].map(([l,n])=>`<button type="button" class="chip" data-act="qdate" data-n="${n}">${l}</button>`).join("")}</div></div>
-      <div class="two"><div><label class="lbl" for="e-time">Boshlanishi <button type="button" class="linkbtn qnt" data-act="notime">vaqtsiz</button></label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div><div><label class="lbl" for="e-end">Tugashi</label><input class="f" id="e-end" type="time" value="${esc(e?e.timeEnd||"":minToT(tmin(opts.time||"15:00")+60))}"></div></div>
+      <div class="two"><div><label class="lbl" for="e-time">Boshlanishi <button type="button" class="linkbtn qnt" data-act="notime">vaqtsiz</button></label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time!=null?opts.time:"15:00"))}"></div><div><label class="lbl" for="e-end">Tugashi</label><input class="f" id="e-end" type="time" value="${esc(e?e.timeEnd||"":(opts.time===""?"":minToT(tmin(opts.time||"15:00")+60)))}"></div></div>
       <div><label class="lbl" for="e-note">Izoh</label><textarea class="f" id="e-note">${esc(e?e.note||"":"")}</textarea></div>
       <div class="err" id="e-err"></div>
       <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="ghost" data-act="evdone" data-id="${esc(e.id)}">${e.done?"Bajarilmadi":"Bajarildi"}</button>`:""}${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
@@ -1230,7 +1244,7 @@ function doRender(){
   $("#headExtra").innerHTML = state.tab==="reja" ? rejaHead() : "";
   $("#gsearch").hidden = !state.db || state.tab==="mijozlar";
   const fab=$("#fab"); fab.hidden=!state.db;
-  fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="tolovlar" ? "+ To'lov" : state.tab==="reja" ? "+ Qo'ng'iroq" : wide ? "+ Uchrashuv" : "+ Kalendarga";
+  fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="tolovlar" ? "+ To'lov" : state.tab==="reja" ? "+ Vazifa" : "+ Vazifa";
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
@@ -1309,6 +1323,10 @@ document.addEventListener("click", async e=>{
     case "bq": state.bq=b.dataset.f; doRender(); return;
     case "caltoday": state.calDay=todayStr(); doRender(); return;
     case "calview": state.calView=b.dataset.v; doRender(); return;
+    case "cat": { const ti=$("#e-title"), old=$("#e-type").value; $("#e-type").value=b.dataset.k; document.querySelectorAll(".cats .cat").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+      if(ti && (!ti.value.trim() || ti.value===EV_DEF[old])) ti.value=EV_DEF[b.dataset.k]||""; return; }
+    case "newtask": openEventForm({date:b.dataset.day||state.day||todayStr(), type:"task", time:"", heading:"Vazifa qo'shish"}); setTimeout(()=>{ const t=$("#e-title"); if(t) t.focus(); },60); return;
+    case "gocalls": state.tab="reja"; state.rejaView="kun"; state.day=b.dataset.day; state.rweek=isoWeek(b.dataset.day); state.open=null; syncWeekSubs(); doRender(); window.scrollTo({top:0}); return;
     case "calnav": {
       const n=Number(b.dataset.n), d=parseD(state.calDay||todayStr()), v=state.calView;
       state.calDay = v==="day" ? addDays(dstr(d),n) : v==="week" ? addDays(dstr(d),7*n) : v==="month" ? dstr(new Date(d.getFullYear(), d.getMonth()+n, 1)) : dstr(new Date(d.getFullYear()+n, d.getMonth(), 1));
@@ -1372,7 +1390,7 @@ document.addEventListener("click", async e=>{
     }
   }
 });
-$("#fab").addEventListener("click", ()=>{ if(state.tab==="tolovlar") openPayPicker(); else if(state.tab==="mijozlar") openClientForm(); else if(state.tab==="reja") openCallForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:todayStr()}); });
+$("#fab").addEventListener("click", ()=>{ if(state.tab==="tolovlar") openPayPicker(); else if(state.tab==="mijozlar") openClientForm(); else openEventForm({date: state.tab==="kalendar"?state.calDay:state.tab==="reja"?(state.day||todayStr()):todayStr(), type:"task", time:"", heading:"Vazifa qo'shish"}); });
 $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
 /* ---------- history: trackpad swipe / ⌘[ / mouse back ---------- */
 let navRestoring=false, navSkip=false;
@@ -1473,7 +1491,7 @@ document.addEventListener("submit", async e=>{
     try{
       await chain("events/"+ev.id,()=>state.db.doc("events/"+ev.id).update({done:true, doneAt:new Date().toISOString(), result:text}));
       Object.assign(ev,{done:true,result:text});
-      if(ev.clientId){ await addHistory(ev.clientId,{type:ev.type==="task"?"note":ev.type, text: ev.title+(text?": "+text:""), tags, date:todayStr(), eventId:ev.id}); }
+      if(ev.clientId){ await addHistory(ev.clientId,{type:({task:"note",support:"note"})[ev.type]||ev.type, text: ev.title+(text?": "+text:""), tags, date:todayStr(), eventId:ev.id}); }
       if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", timeEnd:(ntime&&ev.time&&ev.timeEnd&&tmin(ev.timeEnd)>tmin(ev.time))?minToT(tmin(ntime)+tmin(ev.timeEnd)-tmin(ev.time)):"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
       const back=state.sheet.back; if(back) openClient(back); else closeSheet(); doRender();
     }catch(er){ $("#d-err").textContent=failMsg(er); }
@@ -1625,7 +1643,7 @@ function watchWeek(w){
   if(callSubs.has(w)) callSubs.set(w,u); else u();
 }
 function syncWeekSubs(){
-  const keep=new Set([state.curWeek, state.plan&&state.plan.week, state.rweek, weekShift(state.curWeek,1)].filter(Boolean));
+  const keep=new Set([state.curWeek, state.plan&&state.plan.week, state.rweek, weekShift(state.curWeek,1), ...(state.tab==="kalendar"&&state.calDay?(state.calView==="month"?[...Array(6)].map((_,i)=>isoWeek(addDays(state.calDay.slice(0,8)+"01",7*i))):[isoWeek(state.calDay)]):[])].filter(Boolean));
   for(const [w,u] of [...callSubs]) if(!keep.has(w)){ callSubs.delete(w); callsByWeek.delete(w); if(u) u(); }
   keep.forEach(watchWeek); rebuildCalls();
 }
