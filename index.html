@@ -322,6 +322,28 @@ form.list{display:flex;flex-direction:column;gap:14px}
   .blk{padding:12px 20px} .blk+.blk::before{left:54px} .rule{padding:0 20px 16px}
   .chipsrow{flex-wrap:wrap;overflow:visible}
 }
+@media (min-width:900px){
+  .lg{grid-template-columns:1fr;gap:3px 0} .lg p{grid-column:1} .lg span{white-space:nowrap}
+  .rt>b,.rt>span{min-width:0}
+}
+/* medium windows: narrower sidebar, no phone column, stacked side panels */
+@media (min-width:900px) and (max-width:1279px){
+  .side{width:208px} .content{padding:0 24px 32px}
+  #gsearch{width:190px}
+  .stats{grid-template-columns:repeat(3,1fr)} .ringc{grid-column:1/-1}
+  .lg{grid-template-columns:repeat(4,auto);gap:4px 22px;justify-content:start} .lg p{grid-column:1/-1} .lg span b{margin-left:5px}
+  .ph{display:none}
+  .bg2,.rj{grid-template-columns:minmax(0,1fr) 320px}
+  .det{padding:16px} .det h3{font-size:20px}
+  .outs{grid-template-columns:1fr 1fr}
+  .cbtn{padding:0 14px;font-size:15px} .cbtn em{font-size:13px}
+  .mj{grid-template-columns:minmax(240px,300px) minmax(0,1fr)} .mdet{padding:0 20px 24px}
+  .prof{flex-wrap:wrap} .acts{flex:1 1 100%}
+  .kv{grid-template-columns:1fr 1fr} .sub2{grid-template-columns:1fr;gap:4px}
+  .kal{grid-template-columns:minmax(0,1fr)} .kal>.col{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));align-items:start}
+  .days{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px} .day{padding:10px 12px;gap:10px} .day .dt b{font-size:14px} .ring.sm{width:42px;height:42px} .ring.sm .rv{font-size:11px}
+  .tile{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:12px 14px} .tile .ic{margin:0} .tile b{margin:0;font-size:26px} .tile>span:last-child{flex:1 1 100%}
+}
 </style>
 </head>
 <body class="auth">
