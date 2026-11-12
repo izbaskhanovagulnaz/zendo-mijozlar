@@ -1340,7 +1340,8 @@ async function afterLogin(sb, session){
   const {data:{session}}=await sb.auth.getSession();
   if(session) afterLogin(sb,session); else showLogin();
 })();
-if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+if("serviceWorker" in navigator){ let rl=false; navigator.serviceWorker.addEventListener("controllerchange",()=>{ if(rl) return; rl=true; const a=document.activeElement; if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))) location.reload(); }); }
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>r.update()).catch(()=>{}));
 </script>
 </body>
 </html>

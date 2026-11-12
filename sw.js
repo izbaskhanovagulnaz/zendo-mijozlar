@@ -1,5 +1,5 @@
 // Offline shell: the page opens without network; data always comes live from Supabase.
-const CACHE = "zendo-v2";
+const CACHE = "zendo-v3";
 const SHELL = ["./", "index.html", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
   "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
@@ -11,7 +11,7 @@ self.addEventListener("fetch", e => {
   const isPage = req.mode === "navigate";
   if (isPage || url.origin === location.origin) {
     // network first, so updates show up right away; fall back to cache offline
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(isPage ? "index.html" : req, copy)); return r; })
+    e.respondWith(fetch(req, {cache: "no-cache"}).then(r => { const copy = r.clone(); caches.open(CACHE).then(c => c.put(isPage ? "index.html" : req, copy)); return r; })
       .catch(() => caches.match(isPage ? "index.html" : req)));
     return;
   }
