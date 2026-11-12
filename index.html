@@ -555,6 +555,40 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .pempty:hover{background:var(--accent-t);border-color:transparent}
 .pempty .ic{width:36px;height:36px;border-radius:10px;background:var(--accent-t);color:var(--accent);display:grid;place-items:center;flex:none} .pempty .ic svg{width:18px;height:18px}
 .pempty .rt>span{white-space:normal}
+/* mijozlar: list first */
+.mfull{max-height:none!important;position:static!important;overflow:visible}
+.mtools{display:flex;flex-direction:column;gap:10px;padding:16px 18px 12px}
+.mtools .chipsrow{padding:0}
+.chd{padding-left:68px!important}
+.crf{gap:14px}
+.crf .rt{flex:1 1 auto}
+.crf .cc{flex:none;font-size:13px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crf .cc small{display:block;font-size:12px;color:var(--ink3)}
+.cc{width:110px} .ph2{width:150px} .pay2{width:140px} .lc{width:96px;text-align:right}
+.chd .cc{font-size:11.5px}
+.cdet{display:flex;flex-direction:column;gap:12px;max-width:1040px}
+.backlink{align-self:flex-start;display:flex;align-items:center;gap:6px;color:var(--accent);font-weight:600;font-size:15px;padding:6px 10px 6px 6px;border-radius:9px}
+.backlink:hover{background:var(--accent-t)}
+@media (max-width:1279px){ .ph2{display:none} }
+@media (max-width:1050px){ .lc{display:none} }
+/* aligned tables: header and rows share one grid */
+@media (min-width:900px){
+  .tg{display:grid!important;grid-template-columns:36px minmax(0,1fr) 120px 170px 150px 76px 8px;gap:14px;align-items:center}
+  .thd.tg{padding:6px 20px 8px!important;border-top:.5px solid var(--sep)}
+  .thd.tg span{width:auto!important;margin:0!important}
+  .tg .pc{width:auto;text-align:right}
+  .tg>.pill{justify-self:start;width:auto;text-align:center}
+  .tg .pbtn{justify-self:end}
+  .cg{display:grid!important;grid-template-columns:36px minmax(0,1fr) 110px 150px 150px 90px 8px;gap:14px;align-items:center}
+  .thd.cg{padding:6px 20px 8px!important}
+  .cg .cc{width:auto!important}
+  .cg .lc{text-align:right}
+}
+@media (min-width:900px) and (max-width:1279px){
+  .tg{grid-template-columns:36px minmax(0,1fr) 110px 160px 76px 8px} .tg .c-last{display:none}
+  .cg{grid-template-columns:36px minmax(0,1fr) 110px 150px 90px 8px} .cg .ph2{display:none!important}
+}
+@media (min-width:900px) and (max-width:1050px){ .cg{grid-template-columns:36px minmax(0,1fr) 110px 150px 8px} .cg .lc{display:none!important} }
 </style>
 </head>
 <body class="auth">
@@ -724,11 +758,12 @@ function evRow(e){
     <button class="linkbtn" data-act="evedit" data-id="${esc(e.id)}">Tahrir</button>
   </div>`;
 }
-function clientRow(c){
+function clientRow(c,full){
   const p=payInfo(c);
   const sel=isWide() && state.tab==="mijozlar" && state.selClient===c.id;
   const sub=c.contact||c.domain||c.phone||CST[c.st]||"";
   const tail=p.label ? `<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>` : (lastContact(c)?`<span class="tail">Oxirgi: ${esc(dLabel(lastContact(c)))}</span>`:"");
+  if(full) return `<button class="r cr crf cg" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${esc(c.domain||c.contact||"")}</span></span><span class="cc"><span class="pill ${CSTPILL[c.st]||""}">${esc(({faol:"Faol",yangi:"Yangi",lid:"Lid",ketgan:"Ketgan"})[c.st]||c.st||"")}</span></span><span class="cc ph2">${esc(c.phone||"")}${c.contact&&c.domain?`<small>${esc(c.contact)}</small>`:""}</span><span class="cc pay2">${p.label?`<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>`:""}</span><span class="cc lc">${lastContact(c)?esc(dLabel(lastContact(c))):""}</span>${ICON.chev}</button>`;
   return `<button class="r cr${sel?" sel":""}" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${esc(sub)}</span></span>${tail}</button>`;
 }
 function callDetail(c){
@@ -938,14 +973,15 @@ function renderMijozlar(){
   if(q) list=list.filter(c=>[c.name,c.phone,c.contact,c.domain].some(v=>String(v||"").toLowerCase().includes(q)));
   list.sort((a,b)=> (b.lastContactAt||"").localeCompare(a.lastContactAt||"") || (a.name||"").localeCompare(b.name||""));
   const cnt=k=>[...state.clients.values()].filter(c=>c.st===k).length;
-  if(wide && (!state.selClient || !state.clients.has(state.selClient)) && list.length) state.selClient=list[0].id;
   if(wide && state.selClient && state.histFor!==state.selClient) subscribeHistory(state.selClient);
   const listCard=`<div class="card mlist"><div class="tools"><input id="csearch" class="f srch" type="search" placeholder="Klinika, telefon yoki ism" value="${esc(state.cq)}"></div>
     <div class="chipsrow" role="group" aria-label="Filtr">${[["all","Hammasi "+state.clients.size],["faol","Faol "+cnt("faol")],["yangi","Yangi "+cnt("yangi")],["lid","Lid "+cnt("lid")],["ketgan","Ketgan "+cnt("ketgan")],["qarz","To'lov / qarz"]].map(([k,l])=>`<button class="chip" data-act="cfilter" data-f="${k}" aria-pressed="${state.cf===k}">${esc(l)}</button>`).join("")}</div>
     ${list.length?list.map(clientRow).join(""):`<p class="empty">Hech narsa topilmadi.</p>`}</div>`;
   if(!wide) return listCard+`<p class="empty"><button class="linkbtn" data-act="logout">Hisobdan chiqish</button></p>`;
   const sel=state.selClient&&state.clients.has(state.selClient)?state.selClient:null;
-  return `<div class="mj">${listCard}<div class="card mdet">${sel?clientHTML(sel,false):`<p class="empty">Mijozni tanlang.</p>`}</div></div>`;
+  if(sel) return `<div class="cdet"><button class="backlink" data-act="clientback"><svg viewBox="0 0 10 16" width="9" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2 2 8l6 6"/></svg>Mijozlar</button><div class="card mdet">${clientHTML(sel,false)}</div></div>`;
+  return `<div class="card mlist mfull"><div class="mtools"><input id="csearch" class="f srch" type="search" placeholder="Klinika, telefon yoki ism" value="${esc(state.cq)}"><div class="chipsrow" role="group" aria-label="Filtr">${[["all","Hammasi "+state.clients.size],["faol","Faol "+cnt("faol")],["yangi","Yangi "+cnt("yangi")],["lid","Lid "+cnt("lid")],["ketgan","Ketgan "+cnt("ketgan")],["qarz","To'lov / qarz"]].map(([k,l])=>`<button class="chip" data-act="cfilter" data-f="${k}" aria-pressed="${state.cf===k}">${esc(l)}</button>`).join("")}</div></div>
+    ${list.length?`<div class="thd chd cg"><span></span><span>Mijoz · ${list.length}</span><span class="cc">Holati</span><span class="cc ph2">Telefon</span><span class="cc pay2">To'lov</span><span class="cc lc">Oxirgi aloqa</span><span></span></div>${list.map(c=>clientRow(c,true)).join("")}`:`<p class="empty">Hech narsa topilmadi.</p>`}</div>`;
 }
 
 /* ---------- render: Reja (weekly call plan) ---------- */
@@ -1052,11 +1088,11 @@ function tolovRow(c){
   const ps=payState(c), b=ps.b, per=Number(b.periodMonths)||1, last=paysOf(c.id)[0];
   const lastAt=last?last.paidAt:b.lastPaidAt, lastAmt=last?last.amount:(lastAt?b.lastPaidAmount:null);
   const sub = lastAt ? `${dLabel(lastAt)}da ${last&&last.months?last.months:per} oyga to'lagan${b.paidUntil?` · keyingi: ${dLabel(b.paidUntil)}`:""}` : b.paidUntil ? `Keyingi to'lov: ${dLabel(b.paidUntil)}` : (c.domain||CST[c.st]||"");
-  return `<div class="r tr" data-act="client" data-id="${esc(c.id)}" role="button" title="Mijoz kartasini ochish">${avatar(c.name)}
+  return `<div class="r tr tg" data-act="client" data-id="${esc(c.id)}" role="button" title="Mijoz kartasini ochish">${avatar(c.name)}
     <div class="rt"><b>${esc(c.name)}</b><span>${esc(sub)}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
     ${payPill(ps)}
     <span class="pc">${b.monthly?`${esc(money(b.monthly,b.currency))}<small>oyiga · ${per} oylik ${esc(money(renewAmt(b),b.currency).replace(" so'm",""))}</small>`:"—"}</span>
-    <span class="pc">${lastAmt?`${esc(money(lastAmt,b.currency))}<small>${lastAt?esc(dLabel(lastAt)):"sana noma'lum"}</small>`:"—"}</span>
+    <span class="pc c-last">${lastAmt?`${esc(money(lastAmt,b.currency))}<small>${lastAt?esc(dLabel(lastAt)):"sana noma'lum"}</small>`:"—"}</span>
     <button class="pbtn" data-act="paysheet" data-id="${esc(c.id)}" title="To'lov kiritish yoki tahrirlash">To'lov</button>${ICON.chev}</div>`;
 }
 function renderTolovlar(){
@@ -1101,7 +1137,7 @@ function renderTolovlar(){
   const title=F[state.pf][0];
   const emptyMsg={paid:`${mn}da hali to'lov kiritilmagan.`, expect:`${mn}da muddati tugaydigan obuna yo'q.`, debt:"Qarzdor mijoz yo'q.", soon:"Keyingi 7 kunda to'lovi keladigan mijoz yo'q.", over:"Muddati o'tgan obuna yo'q.", attn:"Hozir e'tibor talab qiladigan to'lov yo'q.", nodata:"Hamma faol mijozlarda to'lov ma'lumoti bor.", all:"To'lov ma'lumoti bor mijoz yo'q."}[state.pf];
   h+=`<div class="card"><div class="ct"><h3>${esc(title)}</h3><em class="cnt">${list.length}</em><button class="linkbtn more" data-act="paypick">+ To'lov kiritish</button></div>
-    ${list.length?`<div class="thd"><span>Mijoz</span><span>Holat</span><span class="pc">Oylik to'lov</span><span class="pc">Oxirgi to'lov</span></div>${list.map(tolovRow).join("")}`:`<div class="emptyc sm"><p>${esc(emptyMsg)}</p><div class="actions"><button class="ghost" data-act="paypick">+ To'lov kiritish</button></div></div>`}</div>`;
+    ${list.length?`<div class="thd tg"><span></span><span>Mijoz</span><span>Holat</span><span class="pc">Oylik to'lov</span><span class="pc c-last">Oxirgi to'lov</span><span></span><span></span></div>${list.map(tolovRow).join("")}`:`<div class="emptyc sm"><p>${esc(emptyMsg)}</p><div class="actions"><button class="ghost" data-act="paypick">+ To'lov kiritish</button></div></div>`}</div>`;
   return h;
 }
 function payPickList(q){
@@ -1446,10 +1482,10 @@ function subscribeHistory(id){
 function openClient(id){
   if(isWide()){
     if(!$("#ov").hidden){ $("#ov").hidden=true; state.sheet=null; }
+    if(state.tab==="mijozlar" && !state.selClient) state.listScroll=window.scrollY;
     state.tab="mijozlar"; state.selClient=id; state.open=null;
     if(state.histFor!==id) subscribeHistory(id);
-    doRender();
-    const el=document.getElementById("cr-"+id); if(el) el.scrollIntoView({block:"nearest"});
+    doRender(); window.scrollTo({top:0});
     return;
   }
   state.sheet={kind:"client", id}; $("#ov").hidden=false; subscribeHistory(id); renderClientSheet(id); $("#sheet").scrollTop=0;
@@ -1624,7 +1660,7 @@ async function syncCallHistory(id){
 /* ---------- events ---------- */
 document.addEventListener("click", async e=>{
   const b=e.target.closest("button, [data-act]"); if(!b) return;
-  if(b.dataset.tab){ state.tab=b.dataset.tab; state.open=null; doRender(); window.scrollTo({top:0}); return; }
+  if(b.dataset.tab){ state.tab=b.dataset.tab; state.open=null; if(state.tab==="mijozlar") state.selClient=null; doRender(); window.scrollTo({top:0}); return; }
   const act=b.dataset.act, id=b.dataset.id;
   if(!act) return;
   switch(act){
@@ -1646,6 +1682,7 @@ document.addEventListener("click", async e=>{
       state.db.doc("payments/"+id).delete().catch(er=>setNotice(failMsg(er))); return;
     }
     case "paypick": openPayPicker(); return;
+    case "clientback": state.selClient=null; doRender(); window.scrollTo({top:state.listScroll||0}); return;
     case "pmon": { const n=Number(b.dataset.n); $("#p-mon").value=n; document.querySelectorAll('[data-act="pmon"]').forEach(x=>x.setAttribute("aria-pressed",String(x===b))); const f=$("#p-from").value; if(f) $("#p-to").value=addMonths(f,n); payPreview(); return; }
     case "quick": openQuick(); return;
     case "qmic": qMic(); return;
@@ -1754,10 +1791,13 @@ addEventListener("popstate", e=>{
   try{
     if(!$("#ov").hidden && !(st&&st.sheet)){ state.confirmDel=null; closeSheet(); }
     if(st&&st.v){
-      const prevW=state.rweek, prevTab=state.tab;
-      for(const [k,val] of Object.entries(st.v)) if(val!=null) state[k]=val;
+      const prevW=state.rweek, prevTab=state.tab, prevSel=state.selClient;
+      for(const [k,val] of Object.entries(st.v)) if(val!=null || k==="selClient") state[k]=val;
       if(state.rweek!==prevW) syncWeekSubs();
-      state.open=null; doRender(); if(state.tab!==prevTab) window.scrollTo({top:0});
+      state.open=null; doRender();
+      if(state.tab!==prevTab) window.scrollTo({top:0});
+      else if(state.tab==="mijozlar" && prevSel && !state.selClient) window.scrollTo({top:state.listScroll||0});
+      else if(state.tab==="mijozlar" && state.selClient!==prevSel) window.scrollTo({top:0});
     }
   } finally { setTimeout(()=>{ navRestoring=false; },0); }
 });
