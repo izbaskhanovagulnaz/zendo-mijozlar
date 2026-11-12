@@ -522,6 +522,11 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .chkl.sm{font-size:13.5px;font-weight:500} .chkl.sm input{width:18px;height:18px}
 .primary[disabled]{opacity:.4;pointer-events:none}
 @media (max-width:899px){ .qbtn{padding:0 10px;height:38px;border-radius:12px} .qbtn span{display:none} .qcl{margin-left:0;width:100%} .qcl input{flex:1;width:auto} .top{align-items:center} }
+/* payments: row button + edit */
+.pbtn{flex:none;height:30px;padding:0 12px;border-radius:9px;background:var(--accent-t);color:var(--accent);font-weight:600;font-size:13px}
+.pbtn:hover{background:var(--accent);color:var(--on-accent)}
+.pedit{padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--accent-t)}
+.gl2 .r .linkbtn{flex:none}
 </style>
 </head>
 <body class="auth">
@@ -1021,12 +1026,12 @@ function tolovRow(c){
   const ps=payState(c), b=ps.b, per=Number(b.periodMonths)||1, last=paysOf(c.id)[0];
   const lastAt=last?last.paidAt:b.lastPaidAt, lastAmt=last?last.amount:(lastAt?b.lastPaidAmount:null);
   const sub = lastAt ? `${dLabel(lastAt)}da ${last&&last.months?last.months:per} oyga to'lagan${b.paidUntil?` · keyingi: ${dLabel(b.paidUntil)}`:""}` : b.paidUntil ? `Keyingi to'lov: ${dLabel(b.paidUntil)}` : (c.domain||CST[c.st]||"");
-  return `<div class="r tr" data-act="paysheet" data-id="${esc(c.id)}" role="button">${avatar(c.name)}
+  return `<div class="r tr" data-act="client" data-id="${esc(c.id)}" role="button" title="Mijoz kartasini ochish">${avatar(c.name)}
     <div class="rt"><b>${esc(c.name)}</b><span>${esc(sub)}${ps.debt?` · <em class="dbt">qarz ${esc(money(b.outstanding,b.currency))}</em>`:""}</span></div>
     ${payPill(ps)}
     <span class="pc">${b.monthly?`${esc(money(renewAmt(b),b.currency))}<small>${per} oyga · oyiga ${esc(money(b.monthly,b.currency).replace(" so'm",""))}</small>`:"—"}</span>
     <span class="pc">${lastAmt?`${esc(money(lastAmt,b.currency))}<small>${lastAt?esc(dLabel(lastAt)):"sana noma'lum"}</small>`:"—"}</span>
-    ${ICON.chev}</div>`;
+    <button class="pbtn" data-act="paysheet" data-id="${esc(c.id)}" title="To'lov kiritish yoki tahrirlash">To'lov</button>${ICON.chev}</div>`;
 }
 function renderTolovlar(){
   const t=todayStr(), cm=t.slice(0,7), pm=state.pm, all=[...state.clients.values()];
@@ -1105,7 +1110,13 @@ function openPaySheet(id){
       <div class="err" id="p-err"></div>
       <div class="actions"><button class="primary" type="submit">To'lovni saqlash</button></div>
     </form>
-    ${paysOf(id).length?`<span class="cap pad">To'lovlar tarixi</span><div class="gl2">${paysOf(id).map(x=>`<div class="r"><div class="rt"><b>${esc(money(x.amount))}</b><span>${esc(dLabel(x.paidAt))} ${x.paidAt?esc(x.paidAt.slice(0,4)):""}${x.months?` · ${x.months} oyga`:""}${x.note?` · ${esc(x.note)}`:""}</span></div><button class="linkbtn del" data-act="paydel" data-id="${esc(x.id)}">${state.confirmDel==="pay:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>`).join("")}</div>`:""}
+    ${paysOf(id).length?`<span class="cap pad">To'lovlar tarixi</span><div class="gl2">${paysOf(id).map(x=>state.payEdit===x.id?`<form class="pedit" id="peForm" data-id="${esc(x.id)}" novalidate>
+        <div class="two"><div><label class="lbl" for="pe-amt">Summa, so'm</label><input class="f" id="pe-amt" inputmode="numeric" value="${Math.round(x.amount)}"></div><div><label class="lbl" for="pe-date">Sana</label><input class="f" id="pe-date" type="date" value="${esc(x.paidAt||"")}"></div></div>
+        <div class="two"><div><label class="lbl" for="pe-mon">Necha oyga</label><select class="f" id="pe-mon"><option value="">—</option>${[1,2,3,6,12].map(n=>`<option value="${n}"${n===Number(x.months)?" selected":""}>${n} oyga</option>`).join("")}</select></div><div><label class="lbl" for="pe-note">Izoh</label><input class="f" id="pe-note" value="${esc(x.note||"")}"></div></div>
+        <p class="hint" style="margin:0">Obuna muddati o'zgarishi kerak bo'lsa, pastdagi «Keyingi to'lov sanasi»ni ham tuzating.</p>
+        <div class="err" id="pe-err"></div>
+        <div class="actions"><button class="primary" type="submit">Saqlash</button><button class="ghost" type="button" data-act="payedit" data-id="">Bekor qilish</button></div></form>`
+      :`<div class="r"><div class="rt"><b>${esc(money(x.amount))}</b><span>${esc(dLabel(x.paidAt))} ${x.paidAt?esc(x.paidAt.slice(0,4)):""}${x.months?` · ${x.months} oyga`:""}${x.note?` · ${esc(x.note)}`:""}</span></div><button class="linkbtn" data-act="payedit" data-id="${esc(x.id)}">Tahrirlash</button><button class="linkbtn del" data-act="paydel" data-id="${esc(x.id)}">${state.confirmDel==="pay:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>`).join("")}</div>`:""}
     <span class="cap pad">Obuna ma'lumoti</span>
     <form id="subForm" class="comp" novalidate>
       <div class="two"><div><label class="lbl" for="s-until">Keyingi to'lov sanasi</label><input class="f" id="s-until" type="date" value="${esc(b.paidUntil||"")}"></div>
@@ -1142,58 +1153,107 @@ async function recordPayment(id, amt, date, ext, n){
   await addHistory(id,{type:"pay", text:`To'lov ${money(amt)}${ext?`, ${n} oyga (${dLabel(b.paidUntil)} gacha)`:""}`, date});
 }
 
-/* ---------- gapirib kiritish: rule-based parser (no AI, runs on device) ---------- */
-const QN=s=>String(s||"").toLowerCase().replace(/[‘’`ʻʼ´]/g,"'").replace(/[«»"]/g," ").replace(/\s+/g," ").trim();
+/* ---------- gapirib kiritish: rule-based parser (no AI, runs on device; Uzbek + Russian) ---------- */
+const QN=s=>String(s||"").toLowerCase().replace(/[‘’`ʻʼ´]/g,"'").replace(/ё/g,"е").replace(/[«»"]/g," ").replace(/\s+/g," ").trim();
+const QTR={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ж:"j",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"x",ц:"ts",ч:"ch",ш:"sh",щ:"sh",ъ:"",ы:"i",ь:"",э:"e",ю:"yu",я:"ya",ў:"o",қ:"q",ғ:"g",ҳ:"h"};
+const qLat=s=>s.replace(/[а-яёўқғҳ]/g,ch=>QTR[ch]??ch);
 const QGEN=new Set("dental dent denta clinic klinika klinikasi stom stoma stomatologiya stomatology med medical medline plus service servis serves center centr markaz markazi shifo smile family premium doctor doktor lab and the new".split(" "));
-const qWords=s=>QN(s).replace(/\(.*?\)/g," ").split(/[^a-z0-9'а-яё]+/i).filter(Boolean);
+const qWords=s=>qLat(QN(s)).replace(/\(.*?\)/g," ").split(/[^a-z0-9']+/).map(w=>w.replace(/^'+|'+$/g,"")).filter(Boolean);
+function qLev(a,b){ const m=a.length,n=b.length; if(Math.abs(m-n)>2) return 9; let p=[...Array(n+1).keys()]; for(let i=1;i<=m;i++){ const c=[i]; for(let j=1;j<=n;j++) c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1)); p=c; } return p[n]; }
+const qFold=w=>w.replace(/'/g,"").replace(/kh/g,"x").replace(/zh/g,"j").replace(/ts/g,"s").replace(/ck/g,"k").replace(/w/g,"v").replace(/c(?=[eiy])/g,"s").replace(/c/g,"k").replace(/ge\b/g,"j").replace(/q/g,"k").replace(/h/g,"x");
+function qWordHit(tok,w){
+  if(tok.startsWith(w)) return true;
+  const a=qFold(tok), b=qFold(w); if(a.startsWith(b)) return true;
+  if(b.length<5) return false;
+  const th=b.length>=7?2:1;
+  for(let L=b.length-1;L<=b.length+1;L++) if(L<=a.length && qLev(a.slice(0,L),b)<=th) return true;
+  return false;
+}
 let qIndex=null;
 function buildQIndex(){
   const full=[], words=new Map();
   for(const c of state.clients.values()){
     const ws=qWords(c.name).filter(w=>w.length>=2);
-    if(ws.length>=2 || ws.some(w=>!QGEN.has(w)&&w.length>=3)) full.push([ws.join(" "),c]);
+    if(ws.length>=2 || ws.some(w=>!QGEN.has(w)&&w.length>=3)) full.push([ws,c]);
     for(const w of ws) if(w.length>=4 && !QGEN.has(w)){ if(!words.has(w)) words.set(w,[]); words.get(w).push(c); }
   }
-  full.sort((a,b)=>b[0].length-a[0].length);
+  full.sort((a,b)=>b[0].join(" ").length-a[0].join(" ").length);
   qIndex={full,words};
 }
 function qFindClients(text){
   if(!qIndex) buildQIndex();
-  const toks=qWords(text), t=" "+toks.join(" ")+" ", found=new Map();
-  for(const [key,c] of qIndex.full) if(t.includes(" "+key)) found.set(c.id,{c,score:100+key.length});
-  for(const tok of toks) for(const [w,cs] of qIndex.words){
-    if(tok.startsWith(w) && tok.length<=w.length+6) for(const c of cs){ const s=10+w.length-cs.length*2+(c.st==="faol"?2:0); if(!found.has(c.id)||found.get(c.id).score<s) found.set(c.id,{c,score:s}); }
+  const toks=qWords(text), found=new Map();
+  for(const [ws,c] of qIndex.full){
+    for(let i=0;i+ws.length<=toks.length;i++){
+      let ok=true; for(let k=0;k<ws.length&&ok;k++){ const w=ws[k], t=toks[i+k]; ok = k===ws.length-1 ? qWordHit(t,w) : (t===w || qFold(t)===qFold(w) || (w.length>=5 && qLev(qFold(t),qFold(w))<=1)); }
+      if(ok){ found.set(c.id,{c,score:100+ws.join(" ").length}); break; }
+    }
+  }
+  for(const tok of toks) if(tok.length>=4) for(const [w,cs] of qIndex.words){
+    if(qWordHit(tok,w)) for(const c of cs){ const s=10+w.length-cs.length*2+(c.st==="faol"?2:0)-(tok.startsWith(w)?0:3); if(!found.has(c.id)||found.get(c.id).score<s) found.set(c.id,{c,score:s}); }
   }
   return [...found.values()].sort((a,b)=>b.score-a.score).map(x=>x.c);
 }
-const QWD={dushanba:1,seshanba:2,chorshanba:3,payshanba:4,juma:5,shanba:6,yakshanba:0};
+const QWD=[[/\bdushanba|понедельник/,1],[/\bseshanba|вторник/,2],[/\bchorshanba|сред[ауеы]/,3],[/\bpayshanba|четверг/,4],[/\bjuma\b|\bjumada|\bjuma kuni|пятниц/,5],[/(^|[^a-z])shanba|суббот/,6],[/yakshanba|воскресен/,0]];
+const RMON=["январ","феврал","март","апрел","ма[яй]","июн","июл","август","сентябр","октябр","ноябр","декабр"];
 function qDate(n){
-  const t=todayStr();
-  if(/\bindinga\b/.test(n)) return addDays(t,2);
-  if(/\bertaga\b|\bertangi\b/.test(n)) return addDays(t,1);
-  let m=/(\d+)\s*kun(dan)?\s*keyin/.exec(n); if(m) return addDays(t,Number(m[1]));
-  if(/keyingi hafta/.test(n)) return addDays(t,7-((parseD(t).getDay()+6)%7));
-  m=/\b(\d{1,2})[.\/](\d{1,2})\b/.exec(n); if(m){ const y=parseD(t).getFullYear(), d=`${y}-${pad(m[2])}-${pad(m[1])}`; return d<t?`${y+1}-${pad(m[2])}-${pad(m[1])}`:d; }
-  m=new RegExp(`\\b(\\d{1,2})[- ]?(${MF.map(x=>x.slice(0,3)).join("|")})[a-z']*`).exec(n);
-  if(m){ const mi=MF.findIndex(x=>x.startsWith(m[2])), y=parseD(t).getFullYear(); let d=`${y}-${pad(mi+1)}-${pad(m[1])}`; if(d<t) d=`${y+1}-${pad(mi+1)}-${pad(m[1])}`; return d; }
-  for(const [w,wd] of Object.entries(QWD)){ if(new RegExp(`\\b${w}`).test(n) && !(w==="shanba" && /(yak|chor|pay|du|se)shanba/.test(n) && !/\bshanba/.test(n.replace(/(yak|chor|pay|du|se)shanba/g,"")))){ let k=(wd-parseD(t).getDay()+7)%7; if(k===0) k=7; return addDays(t,k); } }
-  if(/\bbugun\b.*(qilish kerak|qilaman|yuboraman|qo'ng'iroq qil)/.test(n)) return t;
+  const t=todayStr(), wd=parseD(t).getDay(), y=parseD(t).getFullYear();
+  const mk=(mi,d)=>{ let s=`${y}-${pad(mi+1)}-${pad(d)}`; if(s<t) s=`${y+1}-${pad(mi+1)}-${pad(d)}`; return s; };
+  if(/\bindinga\b|послезавтра/.test(n)) return addDays(t,2);
+  if(/\bertaga\b|\bertangi\b|завтра/.test(n)) return addDays(t,1);
+  let m=/(\d+)\s*kun(dan)?\s*keyin/.exec(n)||/через\s*(\d+)\s*(дн|день)/.exec(n); if(m) return addDays(t,Number(m[1]));
+  if(/через неделю|bir haftadan keyin/.test(n)) return addDays(t,7);
+  if(/keyingi hafta|следующей неделе|на следующей/.test(n)) return addDays(t,7-((wd+6)%7));
+  m=/\b(\d{1,2})[.\/](\d{1,2})\b/.exec(n); if(m && Number(m[2])<=12) return mk(Number(m[2])-1,Number(m[1]));
+  m=new RegExp(`\\b(\\d{1,2})[- ]?(${MF.map(x=>x.slice(0,3)).join("|")})[a-z']*`).exec(n); if(m) return mk(MF.findIndex(x=>x.startsWith(m[2])),Number(m[1]));
+  m=new RegExp(`\\b(\\d{1,2})[- ]?(${RMON.join("|")})`).exec(n); if(m) return mk(RMON.findIndex(r=>new RegExp("^"+r).test(m[2])),Number(m[1]));
+  for(const [re,d] of QWD) if(re.test(n)){ let k=(d-wd+7)%7; if(k===0) k=7; return addDays(t,k); }
+  if(/(\bbugun\b|сегодня).*(qilish kerak|qilaman|yuboraman|qo'ng'iroq qil|надо|нужно|позвон|отправ)/.test(n)) return t;
   return null;
 }
 function qTime(n){
   let m=/\b(\d{1,2})[:.](\d{2})\b/.exec(n); if(m && Number(m[1])<24) return pad(m[1])+":"+m[2];
-  m=/soat\s*(\d{1,2})/.exec(n); if(m){ let h=Number(m[1]); if(h<8 && !/ertalab/.test(n)) h+=12; return pad(h)+":00"; }
-  if(/tushdan keyin/.test(n)) return "14:00"; if(/ertalab/.test(n)) return "10:00"; if(/kechqurun/.test(n)) return "17:00";
+  m=/soat\s*(\d{1,2})/.exec(n)||/(?:^|\s)в\s*(\d{1,2})(?!\d)(?![.:]\d)(?!\s*(дн|день|тыс|млн|мес|числ))/.exec(n)||/(\d{1,2})\s*час/.exec(n);
+  if(m){ let h=Number(m[1]); if(h<8 && !/ertalab|утр/.test(n)) h+=12; if(h<24) return pad(h)+":00"; }
+  if(/tushdan keyin|после обеда|(^|\s)дн[её]м/.test(n)) return "14:00"; if(/ertalab|утром/.test(n)) return "10:00"; if(/kechqurun|вечером/.test(n)) return "17:00";
   return "";
 }
 function qAmount(n){
-  let m=/(\d+(?:[.,]\d+)?)\s*(mln|million|milion)/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e6);
-  m=/(\d+(?:[.,]\d+)?)\s*ming/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e3);
+  let m=/(\d+(?:[.,]\d+)?)\s*(mln|million|milion|млн|миллион)/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e6);
+  m=/(\d+(?:[.,]\d+)?)\s*(ming|тыс|к(?![а-я]))/.exec(n); if(m) return Math.round(parseFloat(m[1].replace(",","."))*1e3);
   m=/(\d{1,3}(?:[ .,]\d{3})+|\d{4,})/.exec(n); if(m) return Number(m[1].replace(/[ .,]/g,""));
   return 0;
 }
-function qMonths(n){ const m=/(\d{1,2})\s*oy/.exec(n); if(m) return Number(m[1]); if(/yillik|\b1 yil|bir yil/.test(n)) return 12; return 0; }
-function qTags(n){ const T=[["sms","SMS"],["xodim","Xodimlar"],["kassa","Kassa"],["to'lov","To'lov"],["hisobot","Hisobot"],["ombor","Ombor"],["laborator","Laboratoriya"],["bemor","Bemorlar"]]; const r=T.filter(([k])=>n.includes(k)).map(x=>x[1]); if(/muammo yo'q|hammasi yaxshi|zo'r ishlayapti/.test(n)) r.push("Muammo yo'q"); return r; }
+function qMonths(n){
+  const m=/(\d{1,2})\s*(oy|мес)/.exec(n); if(m) return Number(m[1]);
+  if(/yillik|\b1 yil|bir yil|на год|за год|годов/.test(n)) return 12; if(/полгода|yarim yil/.test(n)) return 6; if(/квартал/.test(n)) return 3;
+  return 0;
+}
+function qTags(n){
+  const T=[[/sms|смс/,"SMS"],[/xodim|сотрудник|персонал/,"Xodimlar"],[/kassa|касс/,"Kassa"],[/to'lov|оплат/,"To'lov"],[/hisobot|отч[её]т/,"Hisobot"],[/ombor|склад/,"Ombor"],[/laborator|лаборатор/,"Laboratoriya"],[/bemor|пациент/,"Bemorlar"]];
+  const r=T.filter(([re])=>re.test(n)).map(x=>x[1]);
+  if(/muammo yo'q|hammasi yaxshi|zo'r ishlayapti|вс[её] хорошо|вс[её] работает|проблем нет/.test(n)) r.push("Muammo yo'q");
+  return r;
+}
+const QRE={
+  pay:/to'la(di|b|gan|dim|shdi|shibdi|bdi)|to'lov qil|pul (tashla|o'tkaz)|оплатил|заплатил|перев[её]л|перевели|скинул|оплата пришла|оплачено/,
+  past:/(dim|ldi|di|ibdi|ekan|yapti|madi|mabdi|gan)\b|(ил|ила|или|ал|ала|али|ел|ела|ели)(?![а-я])/,
+  kot:/ko'tarmad|olmad|javob berma|o'chirilgan|aloqa yo'q|не ответил|не ответила|не взял|не берет|не берут|недоступ|не дозвон|сбросил|вне зоны/,
+  rad:/rad et|kerak emas|qiziqma|xohlama|отказал|не нужно|не интерес|не хотят|не хочет/,
+  muammo:/muammo|ishlamay|kelmay|xato|chiqmay|ochilmay|bormay|проблем|не работает|не приходит|не приходят|ошибк|не отправля|не открыва|не грузит|баг/,
+  noprob:/muammo yo'q|проблем нет|без проблем/,
+  zoom:/\bzoom|demo|зум|демо/,
+  meet:/uchrash|встреч/,
+  tg:/telegram|\btg\b|yozib|телеграм|написал/,
+  call:/qo'ng'iroq|gaplash|telefon|suhbat|позвон|звонил|созвон|поговор|дозвонил|разговар|обсудил/,
+  evpay:/to'lov|havola|hisob|schyot|invoice|qarz|оплат|сч[её]т|ссылк|долг|напомн/,
+  support:/support|dasturchi|tuzat|поддержк|программист|исправ|техник/,
+  evcall:/qo'ng'iroq|telefon|bog'lan|gaplash|позвон|созвон|перезвон|связат|набрать/
+};
+function qPast(n,c){
+  const cw=c?qWords(c.name):[];
+  return n.split(/[^a-z'а-я]+/).some(w=>w.length>=4 && (/(dim|ldi|ibdi|ekan|yapti|madi|mabdi|gan|di)$/.test(w) || /(ил|ила|или|ал|ала|али|ел|ела|ели|лся|лась|лись)$/.test(w)) && !cw.some(x=>qWordHit(qLat(w),x)));
+}
 function qParse(text){
   const out=[], t=todayStr();
   const parts=String(text||"").split(/(?<=[.!?;])\s+|\n+/).map(x=>x.trim()).filter(x=>x.length>2);
@@ -1204,26 +1264,26 @@ function qParse(text){
     if(!c && last){ c=last; inherited=true; }
     if(cands[0]) last=cands[0];
     const cl=c?c.id:"", alt=(cands.length?cands:c?[c]:[]).slice(0,5).map(x=>x.id);
-    const fut=qDate(n), past=/(dim|ldi|di|ibdi|ibdi|ekan|yapti|madi|mabdi|gan)\b/.test(n);
-    const isPay=/to'la(di|b|gan|dim|shdi|shibdi|bdi)|to'lov qil|pul (tashla|o'tkaz)/.test(n) && qAmount(n)>0;
+    const fut=qDate(n), past=qPast(n,c);
+    const isPay=QRE.pay.test(n) && qAmount(n)>0;
     const base={src:raw, cands:alt, clientId:cl, inherited, on:true};
     if(c && (!fut || past)){
-      const type=/\bzoom|demo\b/.test(n)?"zoom":/uchrash/.test(n)?"meet":/telegram|\btg\b|yozib/.test(n)?"tg":isPay?"pay":/qo'ng'iroq|gaplash|telefon|suhbat/.test(n)?"call":"note";
+      const type=QRE.zoom.test(n)?"zoom":QRE.meet.test(n)?"meet":QRE.tg.test(n)?"tg":isPay?"pay":QRE.call.test(n)?"call":"note";
       const hi=out.push({...base, kind:"hist", type, text:raw.replace(/\s+/g," "), tags:qTags(n)})-1;
       const call=[...state.calls.values()].find(x=>x.day===t && clientForCall(x)===c);
       let st=null;
-      if(/ko'tarmad|olmad|javob berma|o'chirilgan|aloqa yo'q/.test(n)) st="kot";
-      else if(/rad et|kerak emas|qiziqma|xohlama/.test(n)) st="rad";
-      else if(/muammo|ishlamay|kelmay|xato|chiqmay|ochilmay|bormay/.test(n) && !/muammo yo'q/.test(n)) st="muammo";
-      else if(isPay||/yillik/.test(n)) st="tolov";
-      else if(/\bzoom|demo/.test(n)) st="zoom";
-      else if(/gaplash|qo'ng'iroq|telefon|suhbat/.test(n)) st="gap";
+      if(QRE.kot.test(n)) st="kot";
+      else if(QRE.rad.test(n)) st="rad";
+      else if(QRE.muammo.test(n) && !QRE.noprob.test(n)) st="muammo";
+      else if(isPay||/yillik|годов/.test(n)) st="tolov";
+      else if(QRE.zoom.test(n)) st="zoom";
+      else if(QRE.call.test(n)) st="gap";
       if(st && out[hi].type==="note") out[hi].type="call";
       if(call && st && (call.st||"kut")!==st) out.push({...base, kind:"status", callId:call.id, st});
     }
     if(isPay && c){ const mo=qMonths(n)||Number((c.billing||{}).periodMonths)||1; out.push({...base, kind:"pay", amount:qAmount(n), months:mo, ext:!(Number((c.billing||{}).outstanding)>0), date:t}); }
     if(fut){
-      const type=/\bzoom|demo/.test(n)?"zoom":/uchrash/.test(n)?"meet":/to'lov|havola|hisob|schyot|invoice|qarz/.test(n)?"pay":/support|dasturchi|tuzat/.test(n)?"support":/qo'ng'iroq|telefon|bog'lan|gaplash/.test(n)?"call":"task";
+      const type=QRE.zoom.test(n)?"zoom":QRE.meet.test(n)?"meet":QRE.evpay.test(n)?"pay":QRE.support.test(n)?"support":QRE.evcall.test(n)?"call":"task";
       let title=raw.replace(/\s+/g," ").replace(/[.!?;]+$/,""); if(title.length>90) title=title.slice(0,88)+"…";
       out.push({...base, clientId:cl, kind:"event", type, title, date:fut, time:qTime(n)});
     }
@@ -1541,6 +1601,7 @@ document.addEventListener("click", async e=>{
     case "gopay": state.tab="tolovlar"; state.pf="attn"; doRender(); window.scrollTo({top:0}); return;
     case "pfilter": state.pf=b.dataset.f; doRender(); return;
     case "pmonth": { const n=Number(b.dataset.n); if(!n) state.pm=todayStr().slice(0,7); else { const [y,m]=state.pm.split("-").map(Number); const d=new Date(y,m-1+n,1); state.pm=d.getFullYear()+"-"+pad(d.getMonth()+1); } doRender(); return; }
+    case "payedit": { state.payEdit=b.dataset.id||null; state.confirmDel=null; const bk=state.sheet.back; openPaySheet(state.sheet.id); state.sheet.back=bk; return; }
     case "paydel": {
       if(state.confirmDel!=="pay:"+id){ state.confirmDel="pay:"+id; openPaySheet(state.sheet.id); return; }
       state.confirmDel=null; state.payments.delete(id); const cid=state.sheet.id; openPaySheet(cid); doRender();
@@ -1552,7 +1613,7 @@ document.addEventListener("click", async e=>{
     case "qpick": { const a=state.qacts[Number(b.dataset.i)]; if(a){ a.clientId=b.dataset.id; a.inherited=false; qRender(); } return; }
     case "qsave": qSave(); return;
     case "qclear": $("#q-text").value=""; state.qacts=[]; qRender(); $("#q-text").focus(); return;
-    case "paysheet": { const bk=state.sheet&&state.sheet.kind==="client"?state.sheet.id:null; openPaySheet(id); if(state.sheet) state.sheet.back=bk; return; }
+    case "paysheet": { state.payEdit=null; const bk=state.sheet&&state.sheet.kind==="client"?state.sheet.id:null; openPaySheet(id); if(state.sheet) state.sheet.back=bk; return; }
     case "focususers": { const f=$("#c-users"); if(f){ f.focus(); f.select(); } return; }
     case "quicktask": { const cid=b.dataset.client, onPhone=state.sheet&&state.sheet.kind==="client";
       openEventForm({clientId:cid, type:"call", title:"Qo'ng'iroq qilish", date:addDays(todayStr(),1), time:"10:00", heading:"Vazifa qo'shish", back:onPhone?cid:null});
@@ -1745,6 +1806,19 @@ document.addEventListener("submit", async e=>{
     if(!text && !tags.length){ $("#h-err").textContent="Nima gaplashilganini yozing yoki mavzuni tanlang."; return; }
     try{ await addHistory(cid,{type:$("#h-type").value, text, tags, date:$("#h-date").value||todayStr()}); $("#h-text").value=""; f.querySelectorAll(".tag").forEach(x=>x.setAttribute("aria-pressed","false")); $("#h-err").textContent=""; document.activeElement.blur(); refreshClient(); }
     catch(er){ $("#h-err").textContent=failMsg(er); }
+    return;
+  }
+  if(f.id==="peForm"){
+    const pid=f.dataset.id, x=state.payments.get(pid), cid=state.sheet&&state.sheet.id; if(!x||!cid) return;
+    const amt=num($("#pe-amt").value), date=$("#pe-date").value, mon=$("#pe-mon").value, note=$("#pe-note").value.trim();
+    if(!amt){ $("#pe-err").textContent="Summani kiriting."; return; } if(!date){ $("#pe-err").textContent="Sanani tanlang."; return; }
+    const patch={amount:amt, paidAt:date, months:mon?Number(mon):null, note:note||null};
+    try{
+      await state.db.doc("payments/"+pid).update(patch); Object.assign(x,patch);
+      const latest=paysOf(cid)[0], c=state.clients.get(cid);
+      if(latest && latest.id===pid && c){ const b={...(c.billing||{})}; b.lastPaidAmount=amt; b.lastPaidAt=date; await updateClient(cid,{billing:b}); }
+      state.payEdit=null; const bk=state.sheet.back; openPaySheet(cid); state.sheet.back=bk; doRender();
+    }catch(er){ $("#pe-err").textContent=failMsg(er); }
     return;
   }
   if(f.id==="payForm" || f.id==="subForm"){
