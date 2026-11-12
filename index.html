@@ -693,7 +693,8 @@ function failMsg(e){ return e && (e.code==="invalid_argument"||e.code==="42501")
 function payInfo(c){
   const b=c.billing||{};
   const out={label:null, cls:""};
-  if(b.outstanding>0){ out.label="Qarz "+money(b.outstanding,b.currency); out.cls="p-bad"; return out; }
+  if(b.outstanding>0){ const n=Number(b.outstanding), cur=b.currency&&b.currency!=="UZS"&&b.currency!=="so'm";
+    out.label="Qarz "+(cur||n<1e5?money(n,b.currency):n>=1e6?String(+(n/1e6).toFixed(1)).replace(".",",")+" mln":Math.round(n/1e3)+" ming"); out.cls="p-bad"; return out; }
   if(b.trial){ out.label="Hali to'lamagan"; out.cls="p-warn"; return out; }
   if(b.noSubscription){ out.label="Obuna yo'q"; out.cls="p-warn"; return out; }
   if(b.paidUntil){
@@ -785,8 +786,8 @@ function clientRow(c,full){
   const sel=isWide() && state.tab==="mijozlar" && state.selClient===c.id;
   const sub=c.contact||c.domain||c.phone||CST[c.st]||"";
   const tail=p.label ? `<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>` : (lastContact(c)?`<span class="tail">Oxirgi: ${esc(dLabel(lastContact(c)))}</span>`:"");
-  if(full) return `<button class="r cr crf cg" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${ptag(c)}${esc(c.domain||c.contact||"")}</span></span><span class="cc"><span class="pill ${CSTPILL[c.st]||""}">${esc(({faol:"Faol",yangi:"Yangi",lid:"Lid",ketgan:"Ketgan"})[c.st]||c.st||"")}</span></span><span class="cc ph2">${esc(c.phone||"")}${c.contact&&c.domain?`<small>${esc(c.contact)}</small>`:""}</span><span class="cc pay2">${p.label?`<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>`:""}</span><span class="cc lc">${lastContact(c)?esc(dLabel(lastContact(c))):""}</span>${ICON.chev}</button>`;
-  return `<button class="r cr${sel?" sel":""}" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${prodOf(c)==="klasbox"?ptag(c):""}${esc(sub)}</span></span>${tail}</button>`;
+  if(full===true) return `<button class="r cr crf cg" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${ptag(c)}${esc(c.domain||c.contact||"")}</span></span><span class="cc"><span class="pill ${CSTPILL[c.st]||""}">${esc(({faol:"Faol",yangi:"Yangi",lid:"Lid",ketgan:"Ketgan"})[c.st]||c.st||"")}</span></span><span class="cc ph2">${esc(c.phone||"")}${c.contact&&c.domain?`<small>${esc(c.contact)}</small>`:""}</span><span class="cc pay2">${p.label?`<span class="pill ${PAYPILL[p.cls]||""}">${esc(p.label)}</span>`:""}</span><span class="cc lc">${lastContact(c)?esc(dLabel(lastContact(c))):""}</span>${ICON.chev}</button>`;
+  return `<button class="r cr${sel?" sel":""}" id="cr-${esc(c.id)}" data-act="client" data-id="${esc(c.id)}">${avatar(c.name)}<span class="rt"><b>${esc(c.name)}</b><span>${prodOf(c)==="klasbox"?ptag(c):""}${esc(sub)}</span></span>${tail}${ICON.chev}</button>`;
 }
 function callDetail(c){
   const s=c.st||"kut", phone=(c.phone||"").trim(), tel=phone.replace(/[^\d+]/g,""), id=esc(c.id);
