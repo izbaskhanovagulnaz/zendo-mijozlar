@@ -61,7 +61,7 @@ svg{flex:none}
 h1{margin:0;font-size:30px;line-height:1.12;font-weight:700;letter-spacing:-.025em}
 #gsearch{display:none}
 .fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:8;height:48px;padding:0 20px;border-radius:99px;background:var(--accent);color:var(--on-accent);font-weight:600;box-shadow:0 6px 20px rgba(10,133,119,.35)}
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:color-mix(in srgb,var(--card) 86%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--sep);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:9;background:var(--card);background:color-mix(in srgb,var(--card) 86%,transparent);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border-top:.5px solid var(--sep);display:flex;padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
 nav.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 2px;font-size:11px;font-weight:500;color:var(--ink2);border-radius:10px}
 nav.tabs svg{width:24px;height:24px}
 nav.tabs button[aria-pressed="true"]{color:var(--accent)}
@@ -374,12 +374,12 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .nowline{position:absolute;left:0;right:0;height:2px;background:var(--red);z-index:4;pointer-events:none}
 .nowline::before{content:"";position:absolute;left:-5px;top:-4px;width:10px;height:10px;border-radius:50%;background:var(--red)}
 .t-zoom{--c:var(--blue);--cx:var(--blue-x)} .t-call{--c:var(--orange);--cx:var(--orange-x)} .t-meet{--c:var(--purple);--cx:var(--purple-x)} .t-task{--c:var(--accent);--cx:var(--accent)} .t-pay{--c:var(--green);--cx:var(--green-x)} .t-support{--c:var(--red);--cx:var(--red-x)}
-.evb{background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);box-shadow:none;border-radius:6px;padding:3px 6px}
+.evb{background:var(--card);background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);box-shadow:none;border-radius:6px;padding:3px 6px}
 .evb span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
 .adr{display:grid;border-bottom:1px solid var(--sep)}
 .adl{font-size:10.5px;color:var(--ink3);text-align:right;padding:7px 8px 0 0}
 .adc{border-left:1px solid var(--sep);padding:3px;display:flex;flex-direction:column;gap:2px;min-height:28px;min-width:0}
-.evc{display:block;width:100%;text-align:left;font-size:12px;font-weight:600;border-radius:5px;padding:2px 6px;background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.evc{display:block;width:100%;text-align:left;font-size:12px;font-weight:600;border-radius:5px;padding:2px 6px;background:var(--card);background:color-mix(in srgb,var(--c) 20%,var(--card));color:var(--cx);border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .evc.dn{opacity:.5;text-decoration:line-through}
 .mn.td{background:var(--red);color:#fff}
 .ygrid .mg .s{background:var(--red);color:#fff}
@@ -491,7 +491,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .cats{display:flex;flex-wrap:wrap;gap:6px}
 .cat{display:inline-flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;background:var(--fill);font-size:13.5px;font-weight:500}
 .cat .dot{background:var(--c)}
-.cat[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 18%,var(--card));color:var(--cx);box-shadow:inset 0 0 0 1.5px var(--c)}
+.cat[aria-pressed="true"]{background:var(--card);background:color-mix(in srgb,var(--c) 18%,var(--card));color:var(--cx);box-shadow:inset 0 0 0 1.5px var(--c)}
 .evdot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--blue);margin-left:4px;vertical-align:middle}
 .evc.plc{background:var(--accent-t);color:var(--accent);border-left:3px solid var(--accent)}
 .me2.plc2 .dot{background:var(--accent)!important} .me2.plc2{color:var(--accent);font-weight:600}
@@ -1355,7 +1355,7 @@ function qPast(n,c){
 }
 function qParse(text){
   const out=[], t=todayStr();
-  const parts=String(text||"").split(/(?<=[.!?;])\s+|\n+/).map(x=>x.trim()).filter(x=>x.length>2);
+  const parts=String(text||"").replace(/([.!?;])\s+/g,"$1\n").split(/\n+/).map(x=>x.trim()).filter(x=>x.length>2);
   let last=null;
   for(const raw of parts){
     const n=QN(raw), cands=qFindClients(raw);
