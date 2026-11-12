@@ -344,6 +344,21 @@ form.list{display:flex;flex-direction:column;gap:14px}
   .days{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px} .day{padding:10px 12px;gap:10px} .day .dt b{font-size:14px} .ring.sm{width:42px;height:42px} .ring.sm .rv{font-size:11px}
   .tile{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 12px;padding:12px 14px} .tile .ic{margin:0} .tile b{margin:0;font-size:26px} .tile>span:last-child{flex:1 1 100%}
 }
+/* calendar views */
+.ktools .seg{margin-left:auto}
+.mhd{display:grid;grid-template-columns:repeat(7,1fr);padding:10px 0 8px;border-bottom:.5px solid var(--sep)}
+.mhd span{text-align:right;padding-right:14px;font-size:11.5px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}
+.mc{border-right:.5px solid var(--sep);border-bottom:.5px solid var(--sep);padding:6px 6px 8px;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:cell}
+.mc:nth-child(7n){border-right:0} .mc.out{background:var(--fill)} .mc.out .mn{color:var(--ink3)}
+.mn{align-self:flex-end;width:28px;height:28px;border-radius:50%;font:500 14px var(--round);text-align:center;margin-bottom:2px}
+.mn.td{background:var(--accent);color:var(--on-accent);font-weight:700}
+.me2{display:flex;align-items:center;gap:5px;font-size:12.5px;padding:2px 5px;border-radius:6px;white-space:nowrap;overflow:hidden;min-width:0;width:100%}
+.me2:hover,.mn:not(.td):hover{background:var(--fill2)} .me2 em{font-style:normal;color:var(--ink2);font-variant-numeric:tabular-nums} .me2.dn{opacity:.5;text-decoration:line-through}
+.mmore{font-size:11.5px;color:var(--ink2);padding:0 5px}
+.ygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:16px}
+.ym{font-weight:700;font-size:16px;color:var(--accent);margin-bottom:8px;display:block}
+.ygrid .mg button{width:28px;height:28px;font-size:12.5px}
 </style>
 </head>
 <body class="auth">
@@ -594,33 +609,44 @@ function upcomingCard(){
   for(const e of up){ if(e.date!==cur){ cur=e.date; h+=`<div class="tl-date">${esc(dFull(e.date))}</div>`; } h+=evRow(e); }
   return h+`</div>`;
 }
-function miniMonth(){
-  const t=todayStr(), cd=parseD(state.calDay), y=cd.getFullYear(), m=cd.getMonth();
-  const off=(new Date(y,m,1).getDay()+6)%7, n=new Date(y,m+1,0).getDate();
-  const has=new Set([...state.events.values()].filter(e=>!e.done).map(e=>e.date));
-  let cells="";
-  for(let i=0;i<off;i++) cells+=`<span></span>`;
-  for(let d=1;d<=n;d++){ const ds=y+"-"+pad(m+1)+"-"+pad(d); cells+=`<button class="${ds===state.calDay?"s":ds===t?"t":ds<t?"p":""}${has.has(ds)?" e":""}" data-act="calday" data-day="${ds}">${d}</button>`; }
-  return `<div class="card mini"><div class="mh"><button data-act="calmonth" data-n="-1" aria-label="Oldingi oy">‹</button>${cap1(MF[m])} ${y}<button data-act="calmonth" data-n="1" aria-label="Keyingi oy">›</button></div>
-    <div class="mg">${["D","S","C","P","J","S","Y"].map(x=>`<i>${x}</i>`).join("")}${cells}</div></div>`;
-}
-function weekGrid(days){
-  const t=todayStr(), H=(H1-H0)*HH;
+state.calView="week";
+const WD1=["Dush","Sesh","Chor","Pay","Jum","Shan","Yak"];
+function timeGrid(days){
+  const t=todayStr(), H=(H1-H0)*HH, cols=`grid-template-columns:58px repeat(${days.length},minmax(0,1fr))`;
   const head=days.map(d=>{ const dd=parseD(d); const un=eventsOn(d).filter(e=>tmin(e.time)==null);
-    return `<button class="${d===t?"td":d<t?"ps":""}${d===state.calDay?" sel":""}" data-act="calday" data-day="${d}">${WD[dd.getDay()]}<b>${dd.getDate()}</b>${un.slice(0,2).map(e=>`<i style="background:${EVC[e.type]||"var(--ink3)"}">${esc(e.title||EV_TYPES[e.type]||"")}</i>`).join("")}</button>`; }).join("");
+    return `<button class="${d===t?"td":d<t?"ps":""}" data-act="goday" data-day="${d}">${WD[dd.getDay()]}<b>${dd.getDate()}</b>${un.slice(0,2).map(e=>`<i style="background:${EVC[e.type]||"var(--ink3)"}">${esc(e.title||EV_TYPES[e.type]||"")}</i>`).join("")}</button>`; }).join("");
   let times=""; for(let hh=H0;hh<=H1;hh++) times+=`<span style="top:${(hh-H0)*HH}px">${pad(hh)}:00</span>`;
-  const pos=(a,b)=>{ const top=Math.max(0,Math.min(H-24,(a-H0*60)/60*HH)); return {top, ht:Math.max(26,Math.min(H-top,(b-a)/60*HH)-3)}; };
-  const cols=days.map(d=>{
-    const blocks=((state.plan&&state.plan.blocks)||[]).filter(b=>b.day===d).map(b=>{ const p=String(b.time||"").split(/[–—-]/); const a=tmin(p[0]), z=tmin(p[1]); return a==null?null:{...b,a,z:z==null?a+60:z}; }).filter(Boolean);
-    let h=blocks.map(b=>{ const p=pos(b.a,b.z); return `<div class="bk${/qo.ng.iroq/i.test(b.title||"")?" c":""}${b.done?" dn":""}" style="top:${p.top}px;height:${p.ht}px"><b>${esc(b.title||"")}</b>${esc(b.time||"")}</div>`; }).join("");
+  const body=days.map(d=>{
     const evs=eventsOn(d).filter(e=>tmin(e.time)!=null).map(e=>({e,a:tmin(e.time),z:tmin(e.time)+45}));
     const lanes=[]; for(const x of evs){ let i=lanes.findIndex(end=>end<=x.a); if(i<0){ i=lanes.length; lanes.push(0); } lanes[i]=x.z; x.lane=i; }
-    const base=blocks.length?32:2, wdt=(98-base)/Math.max(lanes.length,1);
-    h+=evs.map(x=>{ const p=pos(x.a,x.z), cl=x.e.clientId?state.clients.get(x.e.clientId):null;
-      return `<button class="evb${x.e.done?" dn":""}" data-act="evedit" data-id="${esc(x.e.id)}" style="top:${p.top}px;height:${Math.max(p.ht,40)}px;left:${base+x.lane*wdt}%;width:${wdt-1}%;background:${EVC[x.e.type]||"var(--ink3)"}"><b>${esc(x.e.title||EV_TYPES[x.e.type]||"")}</b>${esc(x.e.time)}${cl?" · "+esc(cl.name):""}</button>`; }).join("");
+    const wdt=96/Math.max(lanes.length,1);
+    const h=evs.map(x=>{ const top=Math.max(0,Math.min(H-44,(x.a-H0*60)/60*HH)), cl=x.e.clientId?state.clients.get(x.e.clientId):null;
+      return `<button class="evb${x.e.done?" dn":""}" data-act="evedit" data-id="${esc(x.e.id)}" style="top:${top}px;height:42px;left:${2+x.lane*wdt}%;width:${wdt-1}%;background:${EVC[x.e.type]||"var(--ink3)"}"><b>${esc(x.e.title||EV_TYPES[x.e.type]||"")}</b>${esc(x.e.time)}${cl?" · "+esc(cl.name):""}</button>`; }).join("");
     return `<div class="dcol" data-act="gridnew" data-day="${d}" style="height:${H}px">${h}</div>`;
   }).join("");
-  return `<div class="card"><div class="wkh"><span></span>${head}</div><div class="wkg" style="padding:10px 0 12px"><div class="tcol" style="height:${H}px">${times}</div>${cols}</div></div>`;
+  return `<div class="card"><div class="wkh" style="${cols}"><span></span>${head}</div><div class="wkg" style="${cols};padding:10px 0 12px"><div class="tcol" style="height:${H}px">${times}</div>${body}</div></div>`;
+}
+function monthGrid(){
+  const t=todayStr(), cd=parseD(state.calDay), y=cd.getFullYear(), m=cd.getMonth();
+  const off=(new Date(y,m,1).getDay()+6)%7, weeks=Math.ceil((off+new Date(y,m+1,0).getDate())/7);
+  let h=`<div class="card"><div class="mhd">${WD1.map(x=>`<span>${x}</span>`).join("")}</div><div class="mgrid" style="grid-template-rows:repeat(${weeks},minmax(112px,1fr))">`;
+  for(let i=0;i<weeks*7;i++){
+    const d=new Date(y,m,1-off+i), ds=dstr(d), evs=eventsOn(ds);
+    h+=`<div class="mc${d.getMonth()!==m?" out":""}" data-act="monthnew" data-day="${ds}"><button class="mn${ds===t?" td":""}" data-act="goday" data-day="${ds}">${d.getDate()}</button>${evs.slice(0,3).map(e=>`<button class="me2${e.done?" dn":""}" data-act="evedit" data-id="${esc(e.id)}"><i class="dot" style="background:${EVC[e.type]||"var(--ink3)"}"></i>${e.time?`<em>${esc(e.time)}</em>`:""}${esc(e.title||EV_TYPES[e.type]||"")}</button>`).join("")}${evs.length>3?`<button class="mmore" data-act="goday" data-day="${ds}">yana ${evs.length-3} ta</button>`:""}</div>`;
+  }
+  return h+`</div></div>`;
+}
+function yearGrid(){
+  const t=todayStr(), y=parseD(state.calDay).getFullYear();
+  const has=new Set([...state.events.values()].map(e=>e.date));
+  let h=`<div class="ygrid">`;
+  for(let m=0;m<12;m++){
+    const off=(new Date(y,m,1).getDay()+6)%7, n=new Date(y,m+1,0).getDate();
+    let cells=""; for(let i=0;i<off;i++) cells+=`<span></span>`;
+    for(let d=1;d<=n;d++){ const ds=y+"-"+pad(m+1)+"-"+pad(d); cells+=`<button class="${ds===t?"s":""}${has.has(ds)?" e":""}" data-act="goday" data-day="${ds}">${d}</button>`; }
+    h+=`<div class="card mini"><button class="ym" data-act="gomonth" data-day="${y}-${pad(m+1)}-01">${cap1(MF[m])}</button><div class="mg">${["D","S","C","P","J","S","Y"].map(x=>`<i>${x}</i>`).join("")}${cells}</div></div>`;
+  }
+  return h+`</div>`;
 }
 function renderKalendar(){
   const t=todayStr(); if(!state.calDay) state.calDay=t;
@@ -633,8 +659,11 @@ function renderKalendar(){
       <button class="chip" data-act="calshift" data-n="7" aria-label="Keyingi hafta">›</button>
     </div><div class="col">${dayCard()}${upcomingCard()}</div>`;
   }
-  return `<div class="ktools"><div class="tb"><button data-act="calshift" data-n="-7" aria-label="Oldingi hafta">‹</button><button data-act="caltoday">Bugun</button><button data-act="calshift" data-n="7" aria-label="Keyingi hafta">›</button></div><b>${esc(dLabel(days[0]))} – ${esc(dLabel(days[6]))}</b></div>
-    <div class="kal">${weekGrid(days)}<div class="col">${miniMonth()}${dayCard()}${upcomingCard()}</div></div>`;
+  const v=state.calView, cd=parseD(state.calDay), y=cd.getFullYear();
+  const title=v==="day" ? `${dFull(state.calDay)} ${y}` : v==="week" ? `${dLabel(days[0])} – ${dLabel(days[6])} ${y}` : v==="month" ? `${cap1(MF[cd.getMonth()])} ${y}` : String(y);
+  const body=v==="day" ? timeGrid([state.calDay]) : v==="week" ? timeGrid(days) : v==="month" ? monthGrid() : yearGrid();
+  return `<div class="ktools"><div class="tb"><button data-act="calnav" data-n="-1" aria-label="Oldingi">‹</button><button data-act="caltoday">Bugun</button><button data-act="calnav" data-n="1" aria-label="Keyingi">›</button></div><b>${esc(title)}</b>
+    <div class="seg" role="group" aria-label="Ko'rinish">${[["day","Kun"],["week","Hafta"],["month","Oy"],["year","Yil"]].map(([k,l])=>`<button data-act="calview" data-v="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div></div>${body}`;
 }
 
 /* ---------- render: Mijozlar ---------- */
@@ -818,7 +847,7 @@ function openEventForm(opts){
       <div class="two"><div><label class="lbl" for="e-date">Sana</label><input class="f" id="e-date" type="date" value="${esc(date)}"></div><div><label class="lbl" for="e-time">Vaqt</label><input class="f" id="e-time" type="time" value="${esc(e?e.time||"":(opts.time||"15:00"))}"></div></div>
       <div><label class="lbl" for="e-note">Izoh</label><textarea class="f" id="e-note">${esc(e?e.note||"":"")}</textarea></div>
       <div class="err" id="e-err"></div>
-      <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
+      <div class="actions"><button class="primary" type="submit">Saqlash</button>${e?`<button type="button" class="ghost" data-act="evdone" data-id="${esc(e.id)}">${e.done?"Bajarilmadi":"Bajarildi"}</button>`:""}${e?`<button type="button" class="danger${state.confirmDel==="ev:"+e.id?" confirm":""}" data-act="evdel" data-id="${esc(e.id)}">${state.confirmDel==="ev:"+e.id?"Ha, o'chirilsin":"O'chirish"}</button>`:""}</div>
     </form>`;
   setTimeout(()=>{ const f=$("#e-title"); if(f && !e) f.focus(); },50);
 }
@@ -956,6 +985,15 @@ document.addEventListener("click", async e=>{
     case "gopay": state.tab="mijozlar"; state.cf="qarz"; state.selClient=null; doRender(); window.scrollTo({top:0}); return;
     case "bq": state.bq=b.dataset.f; doRender(); return;
     case "caltoday": state.calDay=todayStr(); doRender(); return;
+    case "calview": state.calView=b.dataset.v; doRender(); return;
+    case "calnav": {
+      const n=Number(b.dataset.n), d=parseD(state.calDay||todayStr()), v=state.calView;
+      state.calDay = v==="day" ? addDays(dstr(d),n) : v==="week" ? addDays(dstr(d),7*n) : v==="month" ? dstr(new Date(d.getFullYear(), d.getMonth()+n, 1)) : dstr(new Date(d.getFullYear()+n, d.getMonth(), 1));
+      doRender(); return;
+    }
+    case "goday": state.calDay=b.dataset.day; state.calView="day"; doRender(); return;
+    case "gomonth": state.calDay=b.dataset.day; state.calView="month"; doRender(); return;
+    case "monthnew": state.calDay=b.dataset.day; openEventForm({date:b.dataset.day}); return;
     case "calmonth": { const d=parseD(state.calDay||todayStr()); state.calDay=dstr(new Date(d.getFullYear(), d.getMonth()+Number(b.dataset.n), 1)); doRender(); return; }
     case "sideday": state.tab="reja"; state.rejaView="kun"; state.day=b.dataset.day; state.open=null; doRender(); window.scrollTo({top:0}); return;
     case "focusnote": { const f=$("#h-text"); if(f){ f.scrollIntoView({block:"center"}); f.focus(); } return; }
@@ -979,7 +1017,7 @@ document.addEventListener("click", async e=>{
     case "tag": b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed")!=="true")); return;
     case "evdone": {
       const ev=state.events.get(id); if(!ev) return;
-      if(ev.done){ ev.done=false; doRender(); if(state.sheet&&state.sheet.kind==="client") renderClientSheet(state.sheet.id); chain("events/"+id,()=>state.db.doc("events/"+id).update({done:false})).catch(er=>setNotice(failMsg(er))); return; }
+      if(ev.done){ ev.done=false; if(state.sheet&&state.sheet.kind==="event") closeSheet(); doRender(); if(state.sheet&&state.sheet.kind==="client") renderClientSheet(state.sheet.id); chain("events/"+id,()=>state.db.doc("events/"+id).update({done:false})).catch(er=>setNotice(failMsg(er))); return; }
       openDoneForm(id); return;
     }
     case "evdel": {
