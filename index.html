@@ -1011,7 +1011,7 @@ function renderMijozlar(){
   else if(f!=="all") list=list.filter(c=>c.st===f);
   const q=state.cq.trim().toLowerCase();
   if(q) list=list.filter(c=>[c.name,c.phone,c.contact,c.domain].some(v=>String(v||"").toLowerCase().includes(q)));
-  list.sort((a,b)=> (b.lastContactAt||"").localeCompare(a.lastContactAt||"") || (a.name||"").localeCompare(b.name||""));
+  list.sort((a,b)=> String(a.name||"").trim().localeCompare(String(b.name||"").trim(),"uz",{sensitivity:"base",numeric:true}));
   const cnt=k=>base.filter(c=>c.st===k).length;
   if(wide && state.selClient && state.histFor!==state.selClient) subscribeHistory(state.selClient);
   const listCard=`<div class="card mlist"><div class="tools"><input id="csearch" class="f srch" type="search" placeholder="Mijoz nomi, telefon yoki ism" value="${esc(state.cq)}"><div style="margin-top:10px">${prodSeg()}</div></div>
