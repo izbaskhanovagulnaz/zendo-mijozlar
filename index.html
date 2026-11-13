@@ -138,6 +138,12 @@ body.auth .side,body.auth nav.tabs,body.auth .fab,body.auth #gsearch{display:non
 .outs button{min-height:38px;border-radius:10px;background:var(--fill);display:flex;align-items:center;justify-content:center;gap:7px;font-weight:500;font-size:13px;padding:4px 6px;text-align:center}
 .outs button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
 .links{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:14px}
+.conv{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin-top:14px;padding:12px 12px 12px 14px;border-radius:12px;background:var(--fill)}
+.conv>div{flex:1 1 200px;min-width:0} .conv b{display:block;font-size:14px;font-weight:600} .conv span{display:block;font-size:12.5px;color:var(--ink2);margin-top:2px}
+.convbtn{flex:none;height:36px;padding:0 14px;border-radius:10px;background:var(--card);color:var(--accent);font-weight:600;font-size:14px;box-shadow:var(--shadow)}
+.conv.hot{background:var(--green-t)} .conv.hot .convbtn{background:var(--accent);color:var(--on-accent);box-shadow:none}
+.convbtn[disabled]{opacity:.5}
+
 .saved{color:var(--ink2);font-size:12.5px;min-height:16px;margin-top:6px}
 
 /* ---------- forms ---------- */
@@ -799,6 +805,7 @@ function callDetail(c){
     <a class="cbtn" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">${ICON.tel}<span>Qo'ng'iroq qilish</span><em>${esc(phone||"telefon yo'q")}</em></a>
     <div class="cap">Natija</div>
     <div class="outs" role="group" aria-label="Natija">${STATUSES.map(x=>`<button data-act="st" data-id="${id}" data-st="${x.k}" aria-pressed="${x.k===s}"><i class="dot" style="background:${STDOT[x.k]}"></i>${esc(x.l)}</button>`).join("")}</div>
+    ${cl&&cl.st==="faol"?"":`<div class="conv${s==="tolov"?" hot":""}"><div><b>${s==="tolov"?"To'lovga rozi bo'ldimi?":cl?"Hozir: "+esc(CST[cl.st]||cl.st||""):"Mijozlar bazasida yo'q"}</b><span>${cl?"Faol mijoz qilinadi va to'lov oynasi ochiladi":"Faol mijoz sifatida qo'shiladi, keyin to'lovni kiritasiz"}</span></div><button type="button" class="convbtn" data-act="convert" data-id="${id}">Mijozga aylantirish</button></div>`}
     <label class="lbl" for="ph-${id}">Telefon</label>
     <input class="f" id="ph-${id}" data-field="phone" data-id="${id}" inputmode="tel" placeholder="+998 __ ___ __ __" value="${esc(phone)}">
     <label class="lbl" for="nt-${id}">Izoh (mijoz tarixiga ham yoziladi)</label>
@@ -1785,6 +1792,23 @@ document.addEventListener("click", async e=>{
     }
     case "toggle": state.open=state.open===id?null:id; state.confirmDel=null; doRender(); return;
     case "st": { const c=state.calls.get(id); if(c && c.st!==b.dataset.st){ await writeCall(id,{st:b.dataset.st}); doRender(); syncCallHistory(id); } return; }
+    case "convert": {
+      const c=state.calls.get(id); if(!c||b.disabled) return; b.disabled=true;
+      let cl=clientForCall(c);
+      try{
+        if(cl){ const patch={st:"faol"}; if(!cl.phone&&c.phone) patch.phone=c.phone; if(!cl.domain&&c.site) patch.domain=c.site; await updateClient(cl.id,patch); }
+        else{
+          const cid=uid("m"), site=String(c.site||"").replace(/^https?:\/\//,"").replace(/\/+$/,"");
+          const data={name:c.name, product:/klasbox|blaze-lms/i.test(site)?"klasbox":(state.prod!=="all"?state.prod:"zendo"), phone:c.phone||"", st:"faol", createdAt:new Date().toISOString()}; if(site) data.domain=site;
+          await state.db.doc("clients/"+cid).set(data); state.clients.set(cid,{id:cid,...data}); cl=state.clients.get(cid);
+        }
+        if(c.clientId!==cl.id) await writeCall(id,{clientId:cl.id});
+        await addHistory(cl.id,{type:"note", text:"Liddan faol mijozga aylantirildi", callId:id});
+        if((c.st||"kut")!=="kut" && !c.histId) await syncCallHistory(id);
+        doRender(); setNotice(`«${cl.name}» faol mijoz bo'ldi. Endi to'lovni kiriting.`); openPaySheet(cl.id);
+      }catch(er){ b.disabled=false; setNotice(failMsg(er)); }
+      return;
+    }
     case "callzoom": { const c=state.calls.get(id); const cl=c?clientForCall(c):null; openEventForm({clientId:cl?cl.id:null, type:"zoom", title:c?`Zoom: ${c.name}`:"", date:addDays(todayStr(),1)}); return; }
     case "next": {
       const c=state.calls.get(id); if(!c) return;
