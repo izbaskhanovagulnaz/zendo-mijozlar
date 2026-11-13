@@ -117,7 +117,7 @@ body.auth .side,body.auth nav.tabs,body.auth .fab,body.auth #gsearch{display:non
 .ring.sm{width:48px;height:48px} .ring.sm .rv{font-size:12px;font-weight:600}
 .lg{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px;flex:1;min-width:0}
 .lg p{margin:0 0 4px;grid-column:1/3;font-weight:600;font-size:15px}
-.lg span{display:flex;align-items:center;gap:7px;color:var(--ink2);font-size:13px} .lg span b{margin-left:auto;color:var(--ink);font:600 14px var(--round)}
+.lg span{display:flex;align-items:center;gap:7px;color:var(--ink2);font-size:13px;cursor:pointer;border-radius:6px;margin:-2px -6px;padding:2px 6px} .lg span:hover{background:var(--fill)} .lg span[aria-pressed="true"]{background:var(--fill2);color:var(--ink)} .ring[data-act]{cursor:pointer} .tile .tsub{display:block;font-size:12px;color:var(--ink3);margin-top:1px} .qsub{font-weight:500;color:var(--ink2)} .lg span b{margin-left:auto;color:var(--ink);font:600 14px var(--round)}
 .tile{padding:14px;display:flex;flex-direction:column;gap:2px;text-align:left;min-height:108px}
 .tile .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#fff;margin-bottom:auto} .tile .ic svg{width:16px;height:16px}
 .tile b{font:700 28px/1 var(--round);letter-spacing:-.02em;margin-top:10px} .tile b small{font-size:15px;color:var(--ink2);font-weight:600} .tile b.bad{color:var(--red-x)}
@@ -845,21 +845,24 @@ function renderBugun(){
   const upcoming=[...state.events.values()].filter(e=>!e.done && e.date>t).sort(byWhen).slice(0,3);
   const calls=callsFor(t), cc=counts(calls);
   const payDue=[...state.clients.values()].filter(c=>{ const b=c.billing||{}; if(b.outstanding>0) return true; if(!b.paidUntil) return false; return daysBetween(t,b.paidUntil)<=7; }).sort((a,b)=>((a.billing||{}).paidUntil||"").localeCompare((b.billing||{}).paidUntil||""));
-  const lg=(color,label,n)=>`<span><i class="dot" style="background:${color}"></i>${label}<b>${n}</b></span>`;
+  const lg=(color,label,n,f)=>`<span role="button" tabindex="0" data-act="bq" data-f="${f}" aria-pressed="${state.bq===f&&f!=="kut"}"><i class="dot" style="background:${color}"></i>${label}<b>${n}</b></span>`;
+  const evDone=evs.filter(e=>e.done).length, evLeft=evs.length-evDone, evMeet=evs.filter(e=>e.type==="zoom"||e.type==="meet").length;
   let h=`<div class="stats">
-    <div class="card ringc"><span class="ring">${ring(cc.done,cc.total)}<span class="rv"><span>${cc.done}<small>/${cc.total}</small></span></span></span>
-      <div class="lg"><p>Qo'ng'iroqlar</p>${lg("var(--green)","Gaplashildi",cc.done-cc.muammo)}${lg("var(--red)","Muammo bor",cc.muammo)}${lg("var(--orange)","Ko'tarmadi",cc.kot)}${lg("var(--ink3)","Kutilmoqda",cc.kut)}</div></div>
-    <button class="card tile" data-act="gokal"><span class="ic" style="background:var(--blue)">${ICON.vid}</span><b>${evs.filter(e=>e.done).length}<small>/${evs.length}</small></b><span>Bugungi uchrashuv</span></button>
+    <div class="card ringc"><span class="ring" role="button" tabindex="0" data-act="bq" data-f="done" title="Kim bilan gaplashildi">${ring(cc.done,cc.total)}<span class="rv"><span>${cc.done}<small>/${cc.total}</small></span></span></span>
+      <div class="lg"><p>Qo'ng'iroqlar</p>${lg("var(--green)","Gaplashildi",cc.done-cc.muammo,"gap")}${lg("var(--red)","Muammo bor",cc.muammo,"muammo")}${lg("var(--orange)","Ko'tarmadi",cc.kot,"kot")}${lg("var(--ink3)","Kutilmoqda",cc.kut,"kut")}</div></div>
+    <button class="card tile" data-act="gokal"><span class="ic" style="background:var(--blue)">${ICON.clock}</span><b>${evLeft}</b><span>${evs.length?"Bugun qolgan vazifa":"Bugun vazifa yo'q"}${evs.length?`<small class="tsub">${evDone} tasi bajarildi · ${evMeet?evMeet+" ta Zoom/uchrashuv":"Zoom yo'q"}</small>`:""}</span></button>
     <button class="card tile" data-act="gokal"><span class="ic" style="background:var(--orange)">${ICON.clock}</span><b${overdue.length?' class="bad"':""}>${overdue.length}</b><span>Kechikkan</span></button>
     <button class="card tile" data-act="gopay"><span class="ic" style="background:var(--red)">${ICON.card}</span><b${payDue.length?' class="bad"':""}>${payDue.length}</b><span>To'lov yaqin yoki qarz</span></button>
   </div>`;
   const pend=calls.filter(c=>(c.st||"kut")==="kut"), dn=calls.filter(c=>(c.st||"kut")!=="kut");
-  const list=state.bq==="kut"?pend:state.bq==="done"?dn:calls;
+  const SUBQ={gap:"Gaplashildi",muammo:"Muammo bor",kot:"Ko'tarmadi"};
+  const stq=c=>c.st||"kut";
+  const list=state.bq==="kut"?pend:state.bq==="done"?dn:state.bq==="gap"?calls.filter(c=>DONE.has(stq(c))&&stq(c)!=="muammo"):state.bq==="muammo"?calls.filter(c=>stq(c)==="muammo"):state.bq==="kot"?calls.filter(c=>stq(c)==="kot"):calls;
   let sel=null;
   if(wide){ sel=state.open?state.calls.get(state.open):null; if(!sel||sel.day!==t){ sel=pend[0]||null; state.open=sel?sel.id:null; } }
-  const segb=(k,l)=>`<button data-act="bq" data-f="${k}" aria-pressed="${state.bq===k}">${l}</button>`;
-  const queue=`<div class="card qa"><div class="ct"><h3>Navbat</h3><div class="seg" role="group" aria-label="Ko'rsatish">${segb("kut","Kutilmoqda "+pend.length)}${segb("done","Natija bor "+dn.length)}${segb("all","Hammasi")}</div></div>
-    ${list.length?list.map(callRow).join(""):`<p class="empty">${calls.length?(state.bq==="kut"?"Bugungi qo'ng'iroqlar tugadi.":"Hali natija yo'q."):"Bugunga qo'ng'iroq rejalashtirilmagan."}</p>`}</div>`;
+  const segb=(k,l)=>`<button data-act="bq" data-f="${k}" aria-pressed="${state.bq===k||(k==="done"&&!!SUBQ[state.bq])}">${l}</button>`;
+  const queue=`<div class="card qa" id="queue"><div class="ct"><h3>Navbat${SUBQ[state.bq]?` <span class="qsub">· ${SUBQ[state.bq]}</span>`:""}</h3><div class="seg" role="group" aria-label="Ko'rsatish">${segb("kut","Kutilmoqda "+pend.length)}${segb("done","Natija bor "+dn.length)}${segb("all","Hammasi")}</div></div>
+    ${list.length?list.map(callRow).join(""):`<p class="empty">${calls.length?(state.bq==="kut"?"Bugungi qo'ng'iroqlar tugadi.":SUBQ[state.bq]?"Bu holatda qo'ng'iroq yo'q.":"Hali natija yo'q."):"Bugunga qo'ng'iroq rejalashtirilmagan."}</p>`}</div>`;
   const kal=`<div class="card kc"><div class="ct"><h3>Kalendar</h3><button class="linkbtn more" data-act="newev">+ Qo'shish</button></div>
     ${overdue.length?`<div class="rs"><span class="cap red">Kechikkan</span></div>${overdue.map(evRow).join("")}`:""}
     <div class="rs"><span class="cap">Bugun</span></div>${evs.length?evs.map(evRow).join(""):`<p class="empty sm">Bugunga uchrashuv yo'q.</p>`}
@@ -1750,7 +1753,7 @@ document.addEventListener("click", async e=>{
       const t=$("#e-title"); if(t){ t.focus(); t.select(); } return; }
     case "qdate": { const d=$("#e-date"); if(d) d.value=addDays(todayStr(),Number(b.dataset.n)); return; }
     case "notime": { const a=$("#e-time"), z=$("#e-end"); if(a) a.value=""; if(z) z.value=""; return; }
-    case "bq": state.bq=b.dataset.f; doRender(); return;
+    case "bq": { const fromStats=!!b.closest(".ringc"); state.bq=b.dataset.f; doRender(); if(fromStats){ const q=$("#queue"); if(q && q.getBoundingClientRect().top>innerHeight*0.6) q.scrollIntoView({behavior:"smooth",block:"start"}); } return; }
     case "caltoday": state.calDay=todayStr(); doRender(); return;
     case "calview": state.calView=b.dataset.v; doRender(); return;
     case "cat": { const ti=$("#e-title"), old=$("#e-type").value; $("#e-type").value=b.dataset.k; document.querySelectorAll(".cats .cat").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
