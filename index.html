@@ -1508,8 +1508,10 @@ async function qSave(){
 function curClient(){ return state.sheet&&state.sheet.kind==="client" ? state.sheet.id : (state.tab==="mijozlar"&&isWide() ? state.selClient : null); }
 function renderClientSheet(id){
   if(!state.clients.has(id)){ closeSheet(); return; }
-  $("#sheet").className="sheet tall";
-  $("#sheet").innerHTML=clientHTML(id,true);
+  const sh=$("#sheet"), same=sh.dataset.cid===id, top=sh.scrollTop;
+  sh.className="sheet tall"; sh.dataset.cid=id;
+  sh.innerHTML=clientHTML(id,true);
+  if(same) sh.scrollTop=top;
 }
 function refreshClient(){ if(state.sheet&&state.sheet.kind==="client") renderClientSheet(state.sheet.id); else doRender(); }
 function subscribeHistory(id){
@@ -1653,9 +1655,14 @@ function doRender(){
   fab.textContent = state.tab==="mijozlar" ? "+ Mijoz" : state.tab==="tolovlar" ? "+ To'lov" : state.tab==="reja" ? "+ Vazifa" : "+ Vazifa";
   renderSide();
   const ws0=document.querySelector(".wkscroll"), keep=ws0?ws0.scrollTop:null;
+  /* same screen re-rendered (save, delete, live update): keep the scroll position.
+     Safari otherwise jumps to the top while #main is swapped. Navigation callers scroll themselves. */
+  const rk=state.tab+"|"+(state.selClient||"")+"|"+(state.rejaView||""), sameView=rk===state._rk, sy=window.scrollY, mh=$("#main").offsetHeight;
+  state._rk=rk; if(sameView) $("#main").style.minHeight=mh+"px";
   $("#main").innerHTML = state.tab==="bugun" ? renderBugun() : state.tab==="kalendar" ? renderKalendar() : state.tab==="mijozlar" ? renderMijozlar() : state.tab==="tolovlar" ? renderTolovlar() : renderReja();
   for(const q of [".wkp .wp.on"]){ const el=document.querySelector(q); if(el&&el.parentElement.scrollWidth>el.parentElement.clientWidth) el.parentElement.scrollLeft=Math.max(0,el.offsetLeft-el.parentElement.offsetLeft-16); }
   const ws1=document.querySelector(".wkscroll"); if(ws1) ws1.scrollTop = keep!=null ? keep : 7.5*HH;
+  if(sameView){ if(window.scrollY!==sy) window.scrollTo(0,sy); $("#main").style.minHeight=""; }
   navSync();
 }
 
