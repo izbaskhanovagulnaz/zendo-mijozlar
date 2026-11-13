@@ -1869,9 +1869,18 @@ $("#ov").addEventListener("click", e=>{ if(e.target.id==="ov") closeSheet(); });
 let navRestoring=false, navSkip=false;
 const NAVK={all:["tab"], bugun:["bq"], kalendar:["calView","calDay"], mijozlar:["cf","selClient","prod"], tolovlar:["pf","pm","prod"], reja:["rweek","day","rejaView"]};
 function navSnap(){ const v={tab:state.tab}; for(const k of (NAVK[state.tab]||[])) v[k]=state[k]??null; return v; }
+/* the open screen survives a refresh (⌘R): kept in history.state and sessionStorage for this window */
+function navRestore(){
+  let v=history.state&&history.state.v;
+  if(!v){ try{ v=JSON.parse(sessionStorage.getItem("znav")||"null"); }catch(_){ v=null; } }
+  if(!v||!v.tab||!NAVK[v.tab]) return;
+  state.tab=v.tab;
+  for(const k of NAVK[v.tab]) if(k in v && (v[k]!=null || k==="selClient")) state[k]=v[k];
+}
 function navSync(){
   if(navRestoring||!state.db) return;
   const v=navSnap(), hs=history.state, sheet=!$("#ov").hidden;
+  try{ sessionStorage.setItem("znav",JSON.stringify(v)); }catch(_){}
   if(!hs||!hs.v){ history.replaceState({v,sheet},""); return; }
   if(JSON.stringify(hs.v)!==JSON.stringify(v)) history.pushState({v,sheet},"");
 }
@@ -2153,6 +2162,7 @@ function startData(db){
   document.body.classList.remove("auth");
   const timer=setTimeout(()=>setNotice("Ma'lumotlarga hali ulanib bo'lmadi. Internetni tekshiring, sahifa o'zi qayta urinadi."),10000);
   state.db=db;
+  navRestore();
   db.doc("meta/plan").onSnapshot(snap=>{
     clearTimeout(timer); setNotice("");
     if(!snap.exists){ state.plan=null; render(); return; }
