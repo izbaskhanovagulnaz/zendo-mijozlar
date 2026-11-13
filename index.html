@@ -713,6 +713,8 @@ function payInfo(c){
   return out;
 }
 function lastContact(c){ return c.lastContactAt || null; }
+/* call group as shown: a call whose client has since become active shows as "Faol" */
+function callGrp(c,cl){ const g=c.grp||"vazifa"; if(g==="support"||g==="vazifa"||g==="faol") return g; if(cl===undefined) cl=clientForCall(c); return cl&&cl.st==="faol"?"faol":g; }
 function clientForCall(call){
   if(call.clientId && state.clients.has(call.clientId)) return state.clients.get(call.clientId);
   if(call.site){ for(const c of state.clients.values()) if(c.domain===call.site) return c; }
@@ -798,9 +800,9 @@ function clientRow(c,full){
 }
 function callDetail(c){
   const s=c.st||"kut", phone=(c.phone||"").trim(), tel=phone.replace(/[^\d+]/g,""), id=esc(c.id);
-  const cl=clientForCall(c);
+  const cl=clientForCall(c), g=callGrp(c,cl);
   return `<div class="det">
-    <span class="pill ${GPILL[c.grp]||""}">${esc(GROUPS[c.grp]||c.grp||"")}${c.pri?" · "+esc(c.pri):""}</span>
+    <span class="pill ${GPILL[g]||""}">${esc(GROUPS[g]||g||"")}${c.pri?" · "+esc(c.pri):""}</span>
     <h3>${esc(c.name)}</h3>${c.task?`<p>${esc(c.task)}</p>`:""}
     ${c.info?`<div class="note">${esc(c.info)}</div>`:""}
     <a class="cbtn" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">${ICON.tel}<span>Qo'ng'iroq qilish</span><em>${esc(phone||"telefon yo'q")}</em></a>
@@ -823,7 +825,7 @@ function callDetail(c){
 function callRow(c){
   const s=c.st||"kut", sel=state.open===c.id, phone=(c.phone||"").trim();
   const pill=s!=="kut" ? `<span class="pill ${STPILL[s]||""}">${esc(ST_LABEL[s]||s)}</span>`
-    : `<span class="pill ${GPILL[c.grp]||""}">${esc(GSHORT[c.grp]||c.grp||"")}${c.pri?" · "+esc(String(c.pri).toLowerCase()):""}</span>`;
+    : `<span class="pill ${GPILL[callGrp(c)]||""}">${esc(GSHORT[callGrp(c)]||callGrp(c)||"")}${c.pri?" · "+esc(String(c.pri).toLowerCase()):""}</span>`;
   let h=`<div class="r callr${sel?" sel":""}${s!=="kut"?" dn":""}" id="card-${esc(c.id)}" data-act="toggle" data-id="${esc(c.id)}" role="button" aria-expanded="${sel}">
     ${ckHTML(s)}<div class="rt"><b>${esc(c.name)}</b><span>${esc(c.task||c.info||"")}</span></div>${pill}<span class="ph">${esc(phone||"telefon yo'q")}</span>${ICON.chev}</div>`;
   if(sel && !isWide()) h+=`<div class="inl">${callDetail(c)}</div>`;
@@ -831,7 +833,7 @@ function callRow(c){
 }
 function callsCard(list){
   const order=[], m=new Map();
-  for(const c of list){ const g=c.grp||"vazifa"; if(!m.has(g)){ m.set(g,[]); order.push(g); } m.get(g).push(c); }
+  for(const c of list){ const g=callGrp(c); if(!m.has(g)){ m.set(g,[]); order.push(g); } m.get(g).push(c); }
   return order.map(g=>{ const a=m.get(g), cc=counts(a); return `<div class="rs"><span class="cap">${esc(GROUPS[g]||g)}</span><em>${cc.done} / ${cc.total}</em></div>${a.map(callRow).join("")}`; }).join("");
 }
 
