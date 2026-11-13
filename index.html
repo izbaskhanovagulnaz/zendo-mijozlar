@@ -694,7 +694,7 @@ const nowTime = () => { const d=new Date(); return pad(d.getHours())+":"+pad(d.g
 const money = (n,cur) => { if(n==null||n==="") return "—"; const v=Number(n); if(cur==="USD") return "$"+v.toLocaleString("en-US"); return Math.round(v).toLocaleString("ru-RU").replace(/,/g," ")+" so'm"; };
 const uid = p => p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function setNotice(msg){ $("#notice").innerHTML = msg ? `<div class="notice">${esc(msg)}</div>` : ""; }
-function failMsg(e){ return e && (e.code==="invalid_argument"||e.code==="42501") ? "Saqlab bo'lmadi: bu sahifada yozish huquqingiz yo'q." : "Saqlab bo'lmadi, internetni tekshirib qayta urinib ko'ring."; }
+function failMsg(e){ if(e && e.timeout) return "Server javob bermadi. Ilovani yangilang (⌘R) va qayta urinib ko'ring."; return e && (e.code==="invalid_argument"||e.code==="42501") ? "Saqlab bo'lmadi: bu sahifada yozish huquqingiz yo'q." : "Saqlab bo'lmadi, internetni tekshirib qayta urinib ko'ring."; }
 
 /* ---------- derived ---------- */
 function payInfo(c){
@@ -1959,8 +1959,12 @@ document.addEventListener("submit", async e=>{
   if(f.id==="histForm"){
     const cid=curClient(); const text=$("#h-text").value.trim(); const tags=[...f.querySelectorAll('.tag[aria-pressed="true"]')].map(x=>x.dataset.t);
     if(!text && !tags.length){ $("#h-err").textContent="Nima gaplashilganini yozing yoki mavzuni tanlang."; return; }
-    try{ await addHistory(cid,{type:$("#h-type").value, text, tags, date:$("#h-date").value||todayStr()}); $("#h-text").value=""; f.querySelectorAll(".tag").forEach(x=>x.setAttribute("aria-pressed","false")); $("#h-err").textContent=""; document.activeElement.blur(); refreshClient(); }
-    catch(er){ $("#h-err").textContent=failMsg(er); }
+    if(!cid){ $("#h-err").textContent="Mijoz tanlanmagan. Ro'yxatdan mijozni qayta oching."; return; }
+    const btn=f.querySelector('button[type="submit"]'); if(btn.disabled) return;
+    btn.disabled=true; btn.textContent="Saqlanmoqda…"; $("#h-err").textContent="";
+    try{ await addHistory(cid,{type:$("#h-type").value, text, tags, date:$("#h-date").value||todayStr()}); $("#h-text").value=""; f.querySelectorAll(".tag").forEach(x=>x.setAttribute("aria-pressed","false")); document.activeElement.blur(); refreshClient(); }
+    catch(er){ console.error(er); $("#h-err").textContent=failMsg(er); }
+    finally{ if(btn.isConnected){ btn.disabled=false; btn.textContent="Tarixga qo'shish"; } }
     return;
   }
   if(f.id==="peForm"){
@@ -2052,6 +2056,8 @@ function parsePath(path){
 }
 function makeDb(sb){
   const chk=({data,error})=>{ if(error) throw error; return data; };
+  /* writes never hang silently: after 15 s the caller gets an error it can show */
+  const w=q=>withTimeout(q,15000,"Server");
   const live=(key, filter, refetch)=>{
     let t=null; const kick=()=>{ clearTimeout(t); t=setTimeout(refetch,250); };
     const ch=sb.channel(key+":"+Math.random().toString(36).slice(2)).on("postgres_changes",{event:"*",schema:"public",table:filter.table,...(filter.f?{filter:filter.f}:{})},kick).subscribe();
@@ -2073,9 +2079,9 @@ function makeDb(sb){
     }
     const K=P.key||"id"; const base=()=>{ let r={[K]:P.id}; if(P.parent) r.client_id=P.parent; return r; };
     return {
-      set: async data=>chk(await sb.from(P.table).upsert({...toRow(P.table,data), ...base()})),
-      update: async patch=>{ const row=toRow(P.table,patch); if(!Object.keys(row).length) return; chk(await sb.from(P.table).update(row).eq(K,P.id)); },
-      delete: async ()=>chk(await sb.from(P.table).delete().eq(K,P.id))
+      set: async data=>chk(await w(sb.from(P.table).upsert({...toRow(P.table,data), ...base()}))),
+      update: async patch=>{ const row=toRow(P.table,patch); if(!Object.keys(row).length) return; chk(await w(sb.from(P.table).update(row).eq(K,P.id))); },
+      delete: async ()=>chk(await w(sb.from(P.table).delete().eq(K,P.id)))
     };
   }
   function collection(path){
@@ -2173,7 +2179,7 @@ async function afterLogin(sb, session){
   startData(makeDb(sb));
 }
 /* ---------- startup: never hang on «Yuklanmoqda…» ---------- */
-const withTimeout=(p,ms,what)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error(what+" javob bermadi ("+Math.round(ms/1000)+" s)")),ms))]);
+const withTimeout=(p,ms,what)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>{ const e=new Error(what+" javob bermadi ("+Math.round(ms/1000)+" s)"); e.timeout=true; rej(e); },ms))]);
 function loadScript(src,ms){ return withTimeout(new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=src; s.onload=ok; s.onerror=()=>no(new Error("Yuklanmadi: "+src)); document.head.appendChild(s); }),ms,"Kutubxona"); }
 function bootFail(err){
   if(state.db) return;
