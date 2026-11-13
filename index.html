@@ -250,7 +250,7 @@ form.list{display:flex;flex-direction:column;gap:14px}
 .comp{background:var(--inset);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:12px} .sheet .comp{background:var(--card)}
 .tl{position:relative;padding-left:22px} .tl::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1.5px;background:var(--sep)}
 .tl>div{position:relative;padding:0 0 14px} .tl>div::before{content:"";position:absolute;left:-22px;top:4px;width:11px;height:11px;border-radius:50%;background:var(--card);border:2.5px solid var(--accent)}
-.tl b{font-weight:600;font-size:14px;display:block} .tl span.tx{display:block;color:var(--ink2);font-size:14px;white-space:pre-wrap} .tl .tgs{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0}
+.tl b{font-weight:600;font-size:14px;display:block} .tl .th{display:flex;align-items:baseline;gap:10px} .tl .th b{flex:1;min-width:0} .hdel{flex:none;font-size:13px;color:var(--ink2)} .hdel:hover,.hdel.on{color:var(--red-x)} .hdel.on{font-weight:600} .tl span.tx{display:block;color:var(--ink2);font-size:14px;white-space:pre-wrap} .tl .tgs{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0}
 
 /* ---------- reja ---------- */
 .rtools{margin-bottom:14px}
@@ -996,7 +996,7 @@ function clientHTML(id, inSheet){
       <div class="actions"><button class="primary" type="submit">Tarixga qo'shish</button></div>
     </form>
     <span class="cap pad">Suhbatlar tarixi (${hist.length})</span>
-    ${hist.length?`<div class="tl">${hist.map(x=>`<div><b>${esc(dLong(x.date||x.at))} · ${esc(H_TYPES[x.type]||x.type||"")}</b>${(x.tags&&x.tags.length)?`<span class="tgs">${x.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join("")}</span>`:""}<span class="tx">${esc(x.text||"")}</span></div>`).join("")}</div>`:`<p class="empty sm" style="padding-left:0">Hali yozuv yo'q.</p>`}`;
+    ${hist.length?`<div class="tl">${hist.map(x=>`<div><div class="th"><b>${esc(dLong(x.date||x.at))} · ${esc(H_TYPES[x.type]||x.type||"")}</b><button type="button" class="linkbtn hdel${state.confirmDel==="h:"+x.id?" on":""}" data-act="histdel" data-id="${esc(x.id)}">${state.confirmDel==="h:"+x.id?"Ha, o'chirilsin":"O'chirish"}</button></div>${(x.tags&&x.tags.length)?`<span class="tgs">${x.tags.map(t=>`<span class="pill">${esc(t)}</span>`).join("")}</span>`:""}<span class="tx">${esc(x.text||"")}</span></div>`).join("")}</div>`:`<p class="empty sm" style="padding-left:0">Hali yozuv yo'q.</p>`}`;
 }
 const PRODUCTS={zendo:"Zendo",klasbox:"Klasbox"};
 const prodOf=c=>(c&&c.product)||"zendo";
@@ -1830,6 +1830,22 @@ document.addEventListener("click", async e=>{
       writeCall(id,{day:nd, week:nw, ord:maxOrd+1}); state.open=null;
       if(nw!==c.week) setNotice(`«${c.name}» keyingi haftaga (${weekRange(nw)}) o'tkazildi.`);
       doRender();
+      return;
+    }
+    case "histdel": {
+      const cid=curClient(); if(!cid) return;
+      if(state.confirmDel!=="h:"+id){ state.confirmDel="h:"+id; refreshClient(); return; }
+      state.confirmDel=null;
+      const gone=state.hist.find(x=>x.id===id); state.hist=state.hist.filter(x=>x.id!==id); refreshClient();
+      try{
+        await state.db.doc("clients/"+cid+"/history/"+id).delete();
+        for(const c of state.calls.values()) if(c.histId===id){ c.histId=""; await writeCall(c.id,{histId:""}); }
+        const cl=state.clients.get(cid);
+        if(gone && cl && cl.lastContactAt===gone.date && (cl.lastContactText||"")===(gone.text||"").slice(0,140)){
+          const top=state.hist[0];
+          await updateClient(cid, top?{lastContactAt:top.date, lastContactText:(top.text||"").slice(0,140)}:{lastContactAt:null, lastContactText:null});
+        }
+      }catch(er){ setNotice(failMsg(er)); if(gone){ state.hist=[...state.hist,gone].sort((a,b)=>((b.date||"")+(b.at||"")).localeCompare((a.date||"")+(a.at||""))); refreshClient(); } }
       return;
     }
     case "del": {
