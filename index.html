@@ -143,6 +143,7 @@ body.auth .side,body.auth nav.tabs,body.auth .fab,body.auth #gsearch{display:non
 .convbtn{flex:none;height:36px;padding:0 14px;border-radius:10px;background:var(--card);color:var(--accent);font-weight:600;font-size:14px;box-shadow:var(--shadow)}
 .conv.hot{background:var(--green-t)} .conv.hot .convbtn{background:var(--accent);color:var(--on-accent);box-shadow:none}
 .convbtn[disabled]{opacity:.5}
+.cconv{margin:0 0 18px}
 
 .saved{color:var(--ink2);font-size:12.5px;min-height:16px;margin-top:6px}
 
@@ -962,6 +963,7 @@ function clientHTML(id, inSheet){
       <div class="acts"><a class="act p" href="tel:${esc(tel)}" aria-disabled="${tel?"false":"true"}">${ICON.tel}Qo'ng'iroq</a><button class="act" data-act="quicktask" data-client="${cid}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M3 9h18M8 2v4M16 2v4M8.5 14.5l2.5 2.5 4.5-5"/></svg>Vazifa</button><button class="act" data-act="newev" data-client="${cid}">${ICON.vid}Zoom</button><button class="act" data-act="focusnote">${ICON.pen}Yozuv</button>${c.domain?`<a class="act" href="https://${esc(c.domain)}" target="_blank" rel="noopener">${ICON.web}Sayt</a>`:""}</div>
       ${inSheet?`<button class="x" data-act="close" aria-label="Yopish">×</button>`:""}
     </div>
+    ${c.st==="faol"?"":`<div class="conv cconv"><div><b>Hozir: ${esc(CST[c.st]||c.st||"holati yo'q")}</b><span>${c.st==="ketgan"?"Qaytib kelgan bo'lsa, faol qiling va to'lovni kiriting":"To'lovga rozi bo'lsa, faol mijozga aylantiring va to'lovni kiriting"}</span></div><button type="button" class="convbtn" data-act="convcl" data-id="${cid}">${c.st==="ketgan"?"Qayta faol qilish":"Mijozga aylantirish"}</button></div>`}
     ${hasBilling(c)?`<div class="rs0" style="padding-top:4px"><span class="cap">To'lov va obuna</span><button class="linkbtn" data-act="paysheet" data-id="${cid}">Tahrirlash / to'lov kiritish</button></div>
     <div class="kv kv4">
       ${kv("Keyingi to'lov", b.paidUntil?esc(dLabel(b.paidUntil)):"—", left==null?"":left<0?`<span class="neg">${-left} kun o'tdi</span>`:left+" kun qoldi")}
@@ -1792,6 +1794,16 @@ document.addEventListener("click", async e=>{
     }
     case "toggle": state.open=state.open===id?null:id; state.confirmDel=null; doRender(); return;
     case "st": { const c=state.calls.get(id); if(c && c.st!==b.dataset.st){ await writeCall(id,{st:b.dataset.st}); doRender(); syncCallHistory(id); } return; }
+    case "convcl": {
+      const cl=state.clients.get(id); if(!cl||b.disabled) return; b.disabled=true;
+      try{
+        const was=cl.st; await updateClient(id,{st:"faol"});
+        await addHistory(id,{type:"note", text:was==="ketgan"?"Qayta faol mijoz bo'ldi":"Liddan faol mijozga aylantirildi"});
+        doRender(); if(state.sheet&&state.sheet.kind==="client") renderClientSheet(state.sheet.id);
+        openPaySheet(id);
+      }catch(er){ b.disabled=false; setNotice(failMsg(er)); }
+      return;
+    }
     case "convert": {
       const c=state.calls.get(id); if(!c||b.disabled) return; b.disabled=true;
       let cl=clientForCall(c);
