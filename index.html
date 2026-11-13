@@ -1585,6 +1585,7 @@ function openDoneForm(id){
       <div class="tags" role="group" aria-label="Mavzu">${TOPICS.map(t=>`<button type="button" class="tag" data-act="tag" data-t="${esc(t)}" aria-pressed="false">${esc(t)}</button>`).join("")}</div>
       <div><label class="lbl" for="d-text">Nima gaplashildi?${cl?" (mijoz tarixiga yoziladi)":""}</label><textarea class="f" id="d-text" placeholder="Masalan: xodimlar bo'limida muammo bor ekan"></textarea></div>
       <div class="two"><div><label class="lbl" for="d-next">Keyingi uchrashuv (ixtiyoriy)</label><input class="f" id="d-next" type="date"></div><div><label class="lbl" for="d-ntime">Vaqt</label><input class="f" id="d-ntime" type="time" value="${esc(e.time||"15:00")}"></div></div>
+      <label class="lbl" for="d-nnote">Keyingi uchrashuv uchun izoh</label><textarea class="f" id="d-nnote" rows="2" placeholder="Masalan: to'lov havolasini yuborish, Kylie bilan gaplashish"></textarea>
       <div class="err" id="d-err"></div>
       <div class="actions"><button class="primary" type="submit">Saqlash</button></div>
     </form>`;
@@ -1969,12 +1970,12 @@ document.addEventListener("submit", async e=>{
   if(f.id==="doneForm"){
     const ev=state.events.get(state.sheet.id); if(!ev) return;
     const text=$("#d-text").value.trim(); const tags=[...f.querySelectorAll('.tag[aria-pressed="true"]')].map(x=>x.dataset.t);
-    const next=$("#d-next").value, ntime=$("#d-ntime").value;
+    const next=$("#d-next").value, ntime=$("#d-ntime").value, nnote=($("#d-nnote")||{value:""}).value.trim();
     try{
       await chain("events/"+ev.id,()=>state.db.doc("events/"+ev.id).update({done:true, doneAt:new Date().toISOString(), result:text}));
       Object.assign(ev,{done:true,result:text});
       if(ev.clientId){ await addHistory(ev.clientId,{type:({task:"note",support:"note"})[ev.type]||ev.type, text: ev.title+(text?": "+text:""), tags, date:todayStr(), eventId:ev.id}); }
-      if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", timeEnd:(ntime&&ev.time&&ev.timeEnd&&tmin(ev.timeEnd)>tmin(ev.time))?minToT(tmin(ntime)+tmin(ev.timeEnd)-tmin(ev.time)):"", note:"", done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
+      if(next){ const nid=uid("e"); const nd={type:ev.type, clientId:ev.clientId||null, title:ev.title, date:next, time:ntime||"", timeEnd:(ntime&&ev.time&&ev.timeEnd&&tmin(ev.timeEnd)>tmin(ev.time))?minToT(tmin(ntime)+tmin(ev.timeEnd)-tmin(ev.time)):"", note:nnote, done:false, createdAt:new Date().toISOString()}; await state.db.doc("events/"+nid).set(nd); state.events.set(nid,{id:nid,...nd}); }
       const back=state.sheet.back; if(back) openClient(back); else closeSheet(); doRender();
     }catch(er){ $("#d-err").textContent=failMsg(er); }
     return;
